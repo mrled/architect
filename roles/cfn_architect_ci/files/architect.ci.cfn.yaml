@@ -7,6 +7,9 @@ Parameters:
     Type: String
     Default: t2.micro
     ConstraintDescription: must be a valid EC2 instance type.
+  ArchitectUserName:
+    Description: The name of the admin user, who will have passwordless sudo rights
+    Type: String
   SshClientPublicKey:
     Description: An SSH client public key
     Type: String
@@ -252,11 +255,11 @@ Resources:
             - configSwap
             - configAwsCli
             - configSshHostKeys
-            - configSshAuthorizedKeys
+            - configArchitectUser
+            # - configDebugging
             - configDhcp
             - configVpn
             - configVpnKeepalive
-            # - configDebugging
             - configDocker
 
         configSwap:
@@ -344,16 +347,26 @@ Resources:
             configure-ssh-host-keys:
               command: /usr/local/bin/configure-ssh-host-keys.sh
 
-        configSshAuthorizedKeys:
+        configArchitectUser:
           files:
-            /home/admin/.ssh/architect_public_key:
-              content: !Ref SshClientPublicKey
-              mode: "000644"
-              owner: "admin"
-              group: "admin"
+            /usr/local/bin/configure-architect-user.sh:
+              content:
+                !Sub |
+                  #!/bin/sh
+                  set -eu
+                  umask 077
+                  usrname="${ArchitectUserName}"
+                  usrhome="/home/$usrname"
+                  useradd --home-dir "$usrhome" --groups sudo --create-home --shell /bin/bash --user-group "$usrname"
+                  mkdir -p "$usrhome/.ssh"
+                  echo "${SshClientPublicKey}" > "$usrhome/.ssh/authorized_keys"
+                  chown "$usrname:$usrname" "$usrhome" "$usrhome/.ssh" "$usrhome/.ssh/authorized_keys"
+              mode: "000755"
+              owner: "root"
+              group: "root"
           commands:
-            append-to-known-hosts:
-              command: cat < /home/admin/.ssh/architect_public_key >> /home/admin/.ssh/authorized_keys
+            configure-architect-user:
+              command: /usr/local/bin/configure-architect-user.sh
 
         configVpn:
           packages:
@@ -395,14 +408,13 @@ Resources:
                     set -eu
                     umask 0077
                     key=/etc/ipsec.d/private/architect.key
-                    key_enc="${key}.kmsencrypted"
+                    key_enc="$key.kmsencrypted"
                     architect-kms-decrypt.sh "$key_enc" | base64 -d > "$key"
                     systemctl enable strongswan
                     systemctl restart strongswan
               mode: '000755'
               owner: root
               group: root
-
           commands:
             decrypt-vpn-private-key:
               command: /usr/local/bin/decrypt-vpn-key.sh

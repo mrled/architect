@@ -23,3 +23,19 @@
     - role: cfn_architect_kms
     - role: kms_encrypt_secrets
     - role: cfn_architect_ci
+
+  post_tasks:
+    - name: Success!
+      vars:
+        ssh_cmd: >
+          ssh
+          -o UserKnownHostsFile={{ workdir }}/known_hosts
+          -i {{ client_ssh_public_key_path }}
+          {{ architect_user }}@{{ architect_ip_address }}
+        msg: |
+            Connecting to Architect, for debugging
+            IP address          {{ architect_ip_address }}
+            ECDSA fingerprint   {{ ssh_host_public_ecdsa_key_fingerprint }}
+            SSH command         {{ ssh_cmd }}
+      debug:
+        msg: "{{ msg.split('\n') }}"

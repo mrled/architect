@@ -12,6 +12,7 @@
       region: "{{ aws_region }}"
       template: "roles/cfn_architect_ci/files/architect.ci.cfn.yaml"
       template_parameters:
+        ArchitectUserName: "{{ architect_user }}"
         Ec2InstanceProfileName: "{{ architect_iam_profile_name }}"
         VpnIpsecUserConf: "{{ lookup('file', 'ipsec_architect.conf') }}"
         VpnIpsecUserSecrets: "{{ algo_ipsec_secrets }}"
@@ -34,20 +35,14 @@
       content: "{{ architect_ip_address }} {{ ssh_host_public_ecdsa_key }}"
       dest: "{{ workdir }}/known_hosts"
 
-  - name: Success!
-    vars:
-      ssh_cmd: >
-        ssh
-        -o UserKnownHostsFile={{ workdir }}/known_hosts
-        -i {{ client_ssh_public_key_path }}
-        admin@{{ architect_ip_address }}
-      msg: |
-          Connecting to Architect, for debugging
-          IP address          {{ architect_ip_address }}
-          ECDSA fingerprint   {{ ssh_host_public_ecdsa_key_fingerprint }}
-          SSH command         {{ ssh_cmd }}
-    debug:
-      msg: "{{ msg.split('\n') }}"
+  - name: Add new instance to host group
+    add_host:
+      hostname: "{{ architect_ip_address }}"
+      groupname: architect-host
+      ansible_ssh_user: "{{ architect_user }}"
+      ansible_python_interpreter: "/usr/bin/python2.7"
+      ansible_ssh_private_key_file: "{{ client_ssh_private_key_path }}"
+      cloud_provider: ec2
 
   rescue:
   - debug: var=architect_ci_stack_result
