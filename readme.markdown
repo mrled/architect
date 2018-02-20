@@ -2,6 +2,16 @@
 
 Personal CI server
 
+This system uses several different components,
+some of which live in this repo,
+and some which live in separate repos.
+
+## Prerequisites
+
+ -  The `architect-jenkins` Docker image (defined in this repository) must be built and pushed to Docker Hub
+ -  The [`inflatable-wharf` Docker image](https://github.com/mrled/inflatable-wharf) must be built and pushed to Docker Hub
+ -  Typically, I run this from [PSYOPS](https://github.com/mrled/psyops), but that is not a requirement
+
 ## Deploying
 
 We use a normal Ansible vars file `architect.cfg` and vault file `architect.vault.cfg`.
