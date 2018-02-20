@@ -38,19 +38,6 @@ Once you have these things configured, you can deploy with a simple command:
 Rollback is disabled when deploying the CI stack,
 but you may want to log into the console and delete it before another deployment anyway.
 
-### Connecting over SSH for troubleshooting
-
-Once the host key is verified,
-simply use whatever SSH key pair is associated with the instance -
-that is,
-whatever key pair was specified by the `KeyName` parameter to the CFN template.
-In the example below,
-I also supply `-o UserKnownHostsFile=/dev/null` on the command line,
-which prevents ssh from saving the host key to `~/.ssh/known_hosts`
-on the SSH client machine.
-
-    ssh -o UserKnownHostsFile=/dev/null admin@<IP ADDRESS> -i /path/to/keypair.pem
-
 ### Troubleshooting cfn-init
 
 View userdata (from the instance itself)

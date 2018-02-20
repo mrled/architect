@@ -7,10 +7,10 @@ Parameters:
     Type: String
     Default: t2.micro
     ConstraintDescription: must be a valid EC2 instance type.
-  KeyPairName:
-    Description: Name of an existing EC2 KeyPair to enable SSH access to the instance
-    Type: 'AWS::EC2::KeyPair::KeyName'
-    ConstraintDescription: must be the name of an existing EC2 KeyPair.
+  SshClientPublicKey:
+    Description: An SSH client public key
+    Type: String
+    Default: ""
   SSHLocation:
     Description: The IP address range that can be used to SSH to the EC2 instances
     Type: String
@@ -252,6 +252,7 @@ Resources:
             - configSwap
             - configAwsCli
             - configSshHostKeys
+            - configSshAuthorizedKeys
             - configDhcp
             - configVpn
             - configVpnKeepalive
@@ -342,6 +343,17 @@ Resources:
           commands:
             configure-ssh-host-keys:
               command: /usr/local/bin/configure-ssh-host-keys.sh
+
+        configSshAuthorizedKeys:
+          files:
+            /home/admin/.ssh/architect_public_key:
+              content: !Ref SshClientPublicKey
+              mode: "000644"
+              owner: "admin"
+              group: "admin"
+          commands:
+            append-to-known-hosts:
+              command: cat < /home/admin/.ssh/architect_public_key >> /home/admin/.ssh/authorized_keys
 
         configVpn:
           packages:
@@ -477,7 +489,6 @@ Resources:
       ImageId: !Ref Ec2DebianStretchAmi
       InstanceType: !Ref InstanceType
       IamInstanceProfile: !Ref Ec2InstanceProfileName
-      KeyName: !Ref KeyPairName
       Tags:
         - Key: Application
           Value: !Ref 'AWS::StackId'

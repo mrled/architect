@@ -17,6 +17,7 @@
 
       # TODO: Can I include this only if the public key doesn't already exist?
       - import_tasks: tasks/regen_ssh_host_public_key.yaml
+      - import_tasks: tasks/generate_local_ssh_key.yaml
 
   roles:
     - role: cfn_architect_kms

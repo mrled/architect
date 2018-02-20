@@ -20,7 +20,7 @@
         VpnCaCert: "{{ algo_cacert_b64 | b64decode }}"
         VpnKeepaliveHost: "{{ vpn_keepalive_host }}"
         KmsId: "{{ architect_kms_id }}"
-        KeyPairName: "{{ architect_ci_keypair_name }}"
+        SshClientPublicKey: "{{ lookup('file', client_ssh_private_key_path) }}"
         SshHostEcdsaKeyEncrypted: "{{ architect_ssh_host_ecdsa_key_kmsencrypted }}"
       tags:
         Environment: Architect
@@ -39,7 +39,7 @@
       ssh_cmd: >
         ssh
         -o UserKnownHostsFile={{ workdir }}/known_hosts
-        -i /path/to/{{ architect_ci_keypair_name }}.pem
+        -i {{ client_ssh_public_key_path }}
         admin@{{ architect_ip_address }}
       msg: |
           Connecting to Architect, for debugging
