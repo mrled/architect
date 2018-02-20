@@ -348,6 +348,8 @@ Resources:
               command: /usr/local/bin/configure-ssh-host-keys.sh
 
         configArchitectUser:
+          groups:
+            basicallyroot: {}
           files:
             /usr/local/bin/configure-architect-user.sh:
               content:
@@ -357,11 +359,16 @@ Resources:
                   umask 077
                   usrname="${ArchitectUserName}"
                   usrhome="/home/$usrname"
-                  useradd --home-dir "$usrhome" --groups sudo --create-home --shell /bin/bash --user-group "$usrname"
+                  useradd --home-dir "$usrhome" --groups sudo,basicallyroot --create-home --shell /bin/bash --user-group "$usrname"
                   mkdir -p "$usrhome/.ssh"
                   echo "${SshClientPublicKey}" > "$usrhome/.ssh/authorized_keys"
                   chown "$usrname:$usrname" "$usrhome" "$usrhome/.ssh" "$usrhome/.ssh/authorized_keys"
               mode: "000755"
+              owner: "root"
+              group: "root"
+            /etc/sudoers.d/basicallyroot:
+              content: "%basicallyroot   ALL=NOPASSWD: ALL"
+              mode: "000400"
               owner: "root"
               group: "root"
           commands:
