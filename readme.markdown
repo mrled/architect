@@ -55,9 +55,7 @@ on the SSH client machine.
 
 View userdata (from the instance itself)
 
-    ```sh
     wget -q -O - http://169.254.169.254/latest/user-data
-    ```
 
 If the `cfn-init` command is failing,
 comment out the `cfn-init` invocation in userdata,
@@ -70,9 +68,8 @@ You can find the call to `cfn-init` in the CloudFormation template,
 and then replace `cfn-init` with `cfn-get-metadata` to see the metadata exactly as `cfn-init` would.
 For example:
 
-    ```sh
     # The cfn-init call from userdata:
     cfn-init -v --stack "$stackname" --resource ArchitectInstance --region "$region"
+
     # Call cfn-get-metadata instead:
     cfn-get-metadata -v --stack "$stackname" --resource ArchitectInstance --region "$region"
-    ```
