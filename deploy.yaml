@@ -1,4 +1,4 @@
-- name: Configure the server
+- name: Deploy base server
   hosts: localhost
   vars_files:
     - architect.cfg
@@ -6,10 +6,6 @@
 
   pre_tasks:
     - block:
-      - name: Define working directory
-        # Not a changeable variable because it's used other places
-        set_fact:
-          workdir: "./workdir"
       - name: Create working directory
         command: mkdir {{ workdir }}
         args:
@@ -25,12 +21,22 @@
     - role: cfn_architect_ci
 
   post_tasks:
+    - name: Add new instance to host group
+      add_host:
+        name: "{{ architect_ip_address }}"
+        groups: architect-host,swarm_manager
+        ansible_ssh_user: "{{ architect_user }}"
+        ansible_python_interpreter: "/usr/bin/python2.7"
+        ansible_ssh_private_key_file: "{{ client_ssh_private_key_path }}"
+        ansible_ssh_common_args: "-o UserKnownHostsFile={{ known_hosts_file }}"
+        cloud_provider: ec2
+
     - name: Success!
       vars:
         ssh_cmd: >
           ssh
           -o UserKnownHostsFile={{ workdir }}/known_hosts
-          -i {{ client_ssh_public_key_path }}
+          -i {{ client_ssh_private_key_path }}
           {{ architect_user }}@{{ architect_ip_address }}
         msg: |
             Connecting to Architect, for debugging
@@ -39,3 +45,7 @@
             SSH command         {{ ssh_cmd }}
       debug:
         msg: "{{ msg.split('\n') }}"
+
+- name: Deploy Docker Swarm
+  import_playbook: playbooks/docker_swarm.yaml
+  

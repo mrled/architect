@@ -1,10 +1,5 @@
 ---
 
-- name: Set client SSH key path fact
-  set_fact:
-    client_ssh_public_key_path: "{{ workdir }}/architect.pem"
-    client_ssh_private_key_path: "{{ workdir }}/architect.pem.pub"
-
 - name: Generate SSH key to use when connecting to Architect
   command: ssh-keygen -f "{{ client_ssh_public_key_path }}" -N '' -t ecdsa -q
   args:
