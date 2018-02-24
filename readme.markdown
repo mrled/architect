@@ -8,9 +8,63 @@ and some which live in separate repos.
 
 ## Prerequisites
 
+### Software
+
  -  The `architect-jenkins` Docker image (defined in this repository) must be built and pushed to Docker Hub
  -  The [`inflatable-wharf` Docker image](https://github.com/mrled/inflatable-wharf) must be built and pushed to Docker Hub
  -  Typically, I run this from [PSYOPS](https://github.com/mrled/psyops), but that is not a requirement
+
+### Infrastructure
+
+ -  You must have an IPSEC VPN
+    (I use the excellent [Algo](https://github.com/trailofbits/algo)).
+    See the config file for how to configure this.
+
+ -  You must have a zone hosted in Route53
+     -  That zone should resolve public hostnames to private IP addresses on your IPSEC VPN
+     -  For instance, I have an `internal.micahrl.com.` zone with Route53,
+        and [my Algo fork](https://github.com/mrled/algo)
+        updates that zone automatically with VPN addresses when I deploy
+
+ -  You must have credentials for an AWS IAM user,
+    with credentials to update the Route53 zone,
+    saved in `architect.cfg` (see that file for details).
+
+    For instance, I create a group in when I
+    [deploy my Route53 resource](https://github.com/mrled/psyops/blob/193ce3bd563dbd90d700583189c0242995b51676/dns/MicahrlDotCom.cfn.yaml#L132)
+    with the correct permissions, then create a user from that group on the command line:
+
+        # This group already existed, created in the aforelinked CloudFormation template
+        # It already had the permission we need applied
+        > inflw_group="MicahrlDotCom-InternalZoneUpdaterGroup-LV61HMYBWVXI"
+
+        # This user does not already exist; we create it below
+        > inflw_user="architect-inflwharf-zone-updater"
+
+        > aws iam create-user --user-name "$inflw_user"
+        {
+            "User": {
+                "Path": "/",
+                "UserName": "architect-inflwharf-zone-updater",
+                "UserId": "AIDAI5RDN56FJIAH3YWJM",
+                "Arn": "arn:aws:iam::379474500957:user/architect-inflwharf-zone-updater",
+                "CreateDate": "2018-02-24T22:45:57.280Z"
+            }
+        }
+
+        > aws iam add-user-to-group --group-name "$inflw_group" --user-name "$inflw_user"
+
+        > aws iam create-access-key --user-name "$inflw_user"
+        {
+            "AccessKey": {
+                "UserName": "architect-inflwharf-zone-updater",
+                "AccessKeyId": "<redacted>",
+                "Status": "Active",
+                "SecretAccessKey": "<redacted>",
+                "CreateDate": "2018-02-24T22:50:15.312Z"
+            }
+        }
+
 
 ## Deploying
 
