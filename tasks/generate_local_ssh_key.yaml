@@ -1,6 +1,0 @@
----
-
-- name: Generate SSH key to use when connecting to Architect
-  command: ssh-keygen -f "{{ client_ssh_public_key_path }}" -N '' -t ecdsa -q
-  args:
-    creates: "{{ client_ssh_public_key_path }}"

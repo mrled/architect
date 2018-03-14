@@ -1,4 +1,4 @@
-- name: Deploy base server
+- name: Decrypt local items
   hosts: localhost
   vars_files:
     - architect.cfg
@@ -11,9 +11,14 @@
         args:
           creates: "{{ workdir }}"
 
-      # TODO: Can I include this only if the public key doesn't already exist?
-      - import_tasks: tasks/regen_ssh_host_public_key.yaml
-      - import_tasks: tasks/generate_local_ssh_key.yaml
+      - import_tasks: tasks/process_ssh_client_key.yaml
+      - import_tasks: tasks/process_ssh_host_key.yaml
+
+- name: Deploy base server
+  hosts: localhost
+  vars_files:
+    - architect.cfg
+    - architect.vault.cfg
 
   roles:
     - role: cfn_architect_kms
@@ -48,4 +53,3 @@
 
 - name: Deploy Docker Swarm
   import_playbook: playbooks/docker_swarm.yaml
-  
