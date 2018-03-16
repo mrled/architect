@@ -1,0 +1,8 @@
+---
+
+- name: Join the swarm
+  shell: >
+    docker swarm join
+    --advertise-addr={{ swarm_iface | default('lo') }}:2377
+    --token={{ swarm_join_token }}
+    "{{ swarm_manager_connect_ip }}:{{ swarm_manager_connect_port }}"

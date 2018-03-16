@@ -1,0 +1,28 @@
+---
+
+- name: Initialize the Docker swarm and add the new manager to the dynamic_swarm_manager_operational group
+
+  block:
+
+    - name: Initialize swarm cluster
+      vars:
+        advertise_addr: "{{ swarm_iface | default('lo') }}:{{ swarm_manager_connect_port }}"
+      shell: docker swarm init --advertise-addr={{ advertise_addr }}
+
+    - name: Add any operational hosts to dynamic_swarm_manager_operational
+      delegate_to: localhost
+      become: no
+      lineinfile:
+        state: present
+        dest: "{{ swarm_inventory }}"
+        insertafter: '\[dynamic_swarm_manager_operational\]'
+        regexp: "^{{ ansible_hostname }}.*"
+        line: "{{ ansible_hostname }}"
+
+    - name: Refresh inventory
+      meta: refresh_inventory
+
+  run_once: True
+  when: "groups['dynamic_swarm_manager_operational'] | length == 0"
+
+

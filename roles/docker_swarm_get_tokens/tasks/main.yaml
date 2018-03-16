@@ -1,0 +1,56 @@
+---
+
+
+- name: Retrieve worker and manager Swarm join tokens
+
+  block:
+
+    - name: Retrieve Swarm manager token
+      shell: docker swarm join-token -q manager
+      register: swarm_manager_token_result
+
+    - name: Retrieve Swarm worker token
+      shell: docker swarm join-token -q worker
+      register: swarm_worker_token_result
+
+    - name: Get a manager IP for joining machines to connect to the first time
+      vars:
+        iface_name: "ansible_{{ swarm_iface | default('lo') }}"
+      set_fact:
+        swarm_manager_ip: "{{ hostvars[item][iface_name]['ipv4']['address'] }}"
+      with_items: "{{ ansible_play_hosts | default(play_hosts) }}"
+
+    - name: Add Swarm manager join token to dynamic inventory
+      delegate_to: localhost
+      become: no
+      lineinfile:
+        state: present
+        dest: "{{ swarm_inventory }}"
+        insertafter: '\[swarm_manager:vars\]'
+        regexp: "^swarm_join_token={{ swarm_manager_token_result.stdout }}$"
+        line: "swarm_join_token={{ swarm_manager_token_result.stdout }}"
+
+    - name: Add Swarm worker join token to dynamic inventory
+      delegate_to: localhost
+      become: no
+      lineinfile:
+        state: present
+        dest: "{{ swarm_inventory }}"
+        insertafter: '\[swarm_worker:vars\]'
+        regexp: "^swarm_join_token={{ swarm_worker_token_result.stdout }}$"
+        line: "swarm_join_token={{ swarm_worker_token_result.stdout }}"
+
+    - name: Add Swarm manager IP to dynamic inventory
+      delegate_to: localhost
+      become: no
+      lineinfile:
+        state: present
+        dest: "{{ swarm_inventory }}"
+        insertafter: '\[dynamic_swarm_all:vars\]'
+        regexp: "^swarm_manager_connect_ip={{ swarm_manager_ip[0] }}$"
+
+    - name: Refresh inventory
+      meta: refresh_inventory
+
+  run_once: True
+  when: "groups['swarm_manager_operational'] | length == 0"

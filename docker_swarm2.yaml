@@ -1,0 +1,50 @@
+---
+
+# Via: https://github.com/nextrevision/ansible-swarm-playbook
+
+# We rely on two groups defined externally: swarm_manager and swarm_worker.
+# We then create new groups in a dynamic swarm_inventory file
+# (see docker_swarm_determine_status).
+
+# Determine the status of each manager node
+# If operational, place in swarm_manager_operational group
+- hosts: swarm_manager
+  vars_files:
+    - architect.cfg
+    - architect.vault.cfg
+  become: true
+  roles:
+    - role: docker_swarm_determine_status
+
+# Initialize the Docker Swarm (if it was not already initialized)
+- hosts: swarm_manager
+  vars_files:
+    - architect.cfg
+    - architect.vault.cfg
+  become: true
+  # The docker_swarm_initialize role is a run_once task.
+  # We want it to run exactly once across the whole cluster,
+  # so we set serial: 1 here.
+  serial: 1
+  roles:
+    - role: docker_swarm_initialize
+
+- hosts: dynamic_swarm_manager_operational
+  vars_files:
+    - architect.cfg
+    - architect.vault.cfg
+  become: true
+  # The docker_swarm_get_tokens role is a run_once task.
+  # We want it to run exactly once across the whole cluster,
+  # so we set serial: 1 here.
+  serial: 1
+  roles:
+    - role: docker_swarm_get_tokens
+
+- hosts: swarm_manager,swarm_worker
+  vars_files:
+    - architect.cfg
+    - architect.vault.cfg
+  become: true
+  roles:
+    - role: docker_swarm_join
