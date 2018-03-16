@@ -29,7 +29,7 @@
     - name: Add new instance to host group
       add_host:
         name: "{{ architect_ip_address }}"
-        groups: architect-host,swarm_manager
+        groups: architect_host,swarm_manager
         ansible_ssh_user: "{{ architect_user }}"
         ansible_python_interpreter: "/usr/bin/python2.7"
         ansible_ssh_private_key_file: "{{ client_ssh_private_key_path }}"
@@ -72,6 +72,15 @@
     - name: Success!
       debug:
         msg: "{{ success_msg.split('\n') }}"
+
+- name: Configure server
+  hosts: architect_host
+  become: true
+  vars_files:
+    - architect.cfg
+    - architect.vault.cfg
+  roles:
+    - role: docker_jenkins
 
 - name: Deploy Docker Swarm
   import_playbook: playbooks/docker_swarm.yaml

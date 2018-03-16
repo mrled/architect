@@ -23,6 +23,7 @@
         KmsId: "{{ architect_kms_id }}"
         SshClientPublicKey: "{{ lookup('file', client_ssh_public_key_path) }}"
         SshHostEcdsaKeyEncrypted: "{{ architect_ssh_host_ecdsa_key_kmsencrypted }}"
+        JenkinsDataVolumeDevice: "{{ architect_jenkins_data_volume_device_name }}"
       tags:
         Environment: Architect
     register: architect_ci_stack_result
