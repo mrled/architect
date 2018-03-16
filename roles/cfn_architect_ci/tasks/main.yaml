@@ -2,6 +2,12 @@
 
 - block:
 
+  - name: Destroy old Architect CI stack
+    cloudformation:
+      stack_name: "{{ architect_ci_stack_name }}"
+      state: "absent"
+    when: remove_existing_architect_ci_stack | bool == true
+
   - name: Deploy the Architect CI template
     cloudformation:
       aws_access_key: "{{ aws_access_key }}"

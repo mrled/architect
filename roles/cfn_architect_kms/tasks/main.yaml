@@ -1,5 +1,11 @@
 ---
 
+- name: Destroy old Architect KMS stack
+  cloudformation:
+    stack_name: "{{ architect_kms_stack_name }}"
+    state: "absent"
+  when: remove_existing_architect_kms_stack | bool == true
+
 - name: Deploy the Architect KMS template
   cloudformation:
     aws_access_key: "{{ aws_access_key }}"
