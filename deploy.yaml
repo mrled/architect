@@ -1,4 +1,4 @@
-- name: Run local tasks
+- name: Decrypt local items
   hosts: localhost
   vars_files:
     - architect.cfg
@@ -83,4 +83,4 @@
     - role: docker_jenkins
 
 - name: Deploy Docker Swarm
-  import_playbook: docker_swarm2.yaml
+  import_playbook: playbooks/docker_swarm.yaml
