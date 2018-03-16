@@ -437,7 +437,7 @@ Resources:
             /etc/cron.d/vpn-tunnel-keepalive:
               content:
                 !Sub |
-                  */5 * * * * vpnkeepalive ping -t 1 "${VpnKeepaliveHost}"
+                  */5 * * * * vpnkeepalive ping -c 1 "${VpnKeepaliveHost}"
               mode: '000644'
               owner: root
               group: root
