@@ -262,7 +262,6 @@ Resources:
             - configDhcp
             - configVpn
             - configVpnKeepalive
-            - configDocker
 
         configSwap:
           files:
@@ -475,36 +474,6 @@ Resources:
           commands:
             restart-networking:
               command: systemctl restart networking
-
-        configDocker:
-          packages:
-            apt:
-              apt-transport-https: []
-              ca-certificates: []
-              curl: []
-              gnupg2: []
-              openssl: []
-              software-properties-common: []
-          files:
-            /usr/local/bin/setup-docker.sh:
-              content: !Join
-                - "\n"
-                - - |
-                    #!/bin/sh
-                    set -eu
-                    distroid=$(. /etc/os-release; echo "$ID")
-                    releasename=$(lsb_release -cs)
-                    curl -fsSL https://download.docker.com/linux/$distroid/gpg | sudo apt-key add -
-                    add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/$distroid $releasename stable"
-                    apt-get update
-                    apt-get install -y docker-ce
-              mode: '000755'
-              owner: root
-              group: root
-          commands:
-            setup-docker:
-              command: /usr/local/bin/setup-docker.sh
-              ignoreErrors: false
 
     Properties:
       ImageId: !Ref Ec2DebianStretchAmi

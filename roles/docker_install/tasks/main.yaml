@@ -1,0 +1,63 @@
+---
+
+- block:
+
+  - name: Format Jenkins data backing volume
+    filesystem:
+      dev: "/dev/{{ architect_docker_volume_device }}"
+      force: no
+      fstype: ext4
+      resizefs: yes
+
+  - name: Add fstab entry for Jenkins data backing volume
+    mount:
+      fstype: ext4
+      dump: 1
+      passno: 2
+      path: "{{ architect_docker_volume_mountpoint }}"
+      src: "/dev/{{ architect_docker_volume_device }}"
+      state: mounted
+
+  - name: Update APT
+    apt:
+      update_cache: yes
+
+  - name: Install APT prereqs for Docker repository
+    apt:
+      install_recommends: yes
+      name: "{{ item }}"
+      state: latest
+    with_items:
+      - apt-transport-https
+      - ca-certificates
+      - curl
+      - gnupg2
+      - openssl
+      - software-properties-common
+
+  - name: Get distro release ID
+    shell: . /etc/os-release; echo "$ID"
+    register: distro_id_result
+  - name: Get distro release name
+    command: lsb_release -cs
+    register: release_name_result
+  - set_fact:
+      distro_id: "{{ distro_id_result.stdout }}"
+      release_name: "{{ release_name_result.stdout }}"
+
+  - name: Install Docker APT GPG key
+    shell: curl -fsSL "https://download.docker.com/linux/{{ distro_id }}/gpg" | apt-key add -
+
+  - name: Configure Docker APT repository
+    apt_repository:
+      repo: deb [arch=amd64] https://download.docker.com/linux/{{ distro_id }} {{ release_name }} stable
+      state: present
+      filename: docker
+
+  - name: Install Docker
+    apt:
+      install_recommends: yes
+      name: docker-ce
+      state: latest
+
+  when: skip_architect_docker_install | bool == false

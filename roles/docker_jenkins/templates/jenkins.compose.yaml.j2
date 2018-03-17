@@ -35,10 +35,10 @@ services:
       - ACME_DNS_AUTHENTICATOR=route53
       - ACME_SERVER=staging
       - ACME_FREQUENCY=monthly
-      - ACME_SECRETS_ENV_FILE=/run/secrets/lego_acme_env_file
+      - ACME_SECRETS_ENV_FILE=/run/secrets/acme_secrets_env_file
     secrets:
-      - source: lego_acme_env_file
-        target: lego_acme_env_file
+      - source: acme_secrets_env_file
+        target: acme_secrets_env_file
         mode: 0444
     volumes:
       - jenkins_cert:/srv/inflatable-wharf
@@ -54,6 +54,15 @@ volumes:
   jenkins_home:
   jenkins_cert:
 
+# NOTE: To be able to update our secrets,
+# we must use the name property on each secret.
+# (The name property requires using version 3.5 of the compose format.)
+# We must set the name to change whenever the secrets file is updated,
+# so we set it to the hash of the secrets file,
+# such that if our secrets change, so will the name.
+# See also: https://blog.viktoradam.net/2018/02/28/swarm-secrets-made-easy/
+
 secrets:
-  lego_acme_env_file:
+  acme_secrets_env_file:
     file: "{{ architect_jenkins_swarm_inflwharf_secrets_file }}"
+    name: acme_secrets_env_file_${ACME_SERETS_ENV_FILE_HASH}

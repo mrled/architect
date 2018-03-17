@@ -33,22 +33,6 @@ What remains to be translated into AWS from the old readme:
 
         -  Ensure `/etc/rc.local` is executable
 
-    -  I'm using public DNS for backend infrastructure, so I have `*.infra.micahrl.com` hosts that resolve to private ZeroTier IPv6 addresses
-
-    -  Deploy the jenkins.compose.yml file in this directory
-
-            docker stack deploy --compose-file jenkins.compose.yml  jenkins
-
-        -  This spins up an an official `jenkins` image,
-            and also an `inflatable-wharf` image that handles certificate renewal
-            via the `lego` Let's Encrypt client.
-
-            **Jenkins will not be available until `lego` has received the signed certificate from Let's Encrypt**
-
-         -  For more information on how `inflatable-wharf` works,
-            including troubleshooting steps and how to view logs,
-            see <https://github.com/mrled/inflatable-wharf>
-
     -  Follow [docs](https://github.com/jenkinsci/docker/blob/master/README.md)
 
     -  Grab the initial admin password from the `jenkins` service's logs (see above)
