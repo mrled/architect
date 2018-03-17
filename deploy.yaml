@@ -73,7 +73,19 @@
       debug:
         msg: "{{ success_msg.split('\n') }}"
 
-- name: Configure server
+- name: Configure Jenkins Docker service
+  hosts: architect_host
+  become: true
+  vars_files:
+    - architect.cfg
+    - architect.vault.cfg
+  roles:
+    - role: architect_docker_swarm_manager_preconfig
+
+- name: Deploy Docker Swarm
+  import_playbook: playbooks/docker_swarm.yaml
+
+- name: Deploy Jenkins service to Docker Swarm
   hosts: architect_host
   become: true
   vars_files:
@@ -81,6 +93,3 @@
     - architect.vault.cfg
   roles:
     - role: docker_jenkins
-
-- name: Deploy Docker Swarm
-  import_playbook: playbooks/docker_swarm.yaml

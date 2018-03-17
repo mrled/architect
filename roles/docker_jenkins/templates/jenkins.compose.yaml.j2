@@ -1,4 +1,4 @@
-version: "3.2"
+version: "3.5"
 services:
 
   jenkins:
@@ -7,7 +7,7 @@ services:
       - "80:8080"
       - "443:8443"
     environment:
-      - DOCKER_HOST_DOCKER_GID=999
+      - DOCKER_HOST_DOCKER_GID={{ docker_gid }}
     volumes:
       - jenkins_home:/var/jenkins_home
       - jenkins_cert:/var/jenkins_cert
@@ -19,17 +19,21 @@ services:
 
     deploy:
       replicas: 1
-    command: --httpPort=-1 --httpsPort=8443 --httpsCertificate="/var/jenkins_cert/certificates/architect.infra.micahrl.com.crt" --httpsPrivateKey="/var/jenkins_cert/certificates/architect.infra.micahrl.com.key"
+    command: >
+      --httpPort=-1
+      --httpsPort=8443
+      --httpsCertificate="/var/jenkins_cert/certificates/{{ inflwharf_domain_name }}.crt"
+      --httpsPrivateKey="/var/jenkins_cert/certificates/{{ inflwharf_domain_name }}.key"
 
   inflatable-wharf:
     image: mrled/inflatable-wharf:latest
     deploy:
       replicas: 1
     environment:
-      - ACME_LETSENCRYPT_EMAIL=psyops@micahrl.com
-      - ACME_DOMAIN=architect.infra.micahrl.com
-      - ACME_DNS_AUTHENTICATOR=gandi
-      - ACME_SERVER=production
+      - ACME_LETSENCRYPT_EMAIL={{ inflwharf_letsencrypt_email }}
+      - ACME_DOMAIN={{ inflwharf_domain_name }}
+      - ACME_DNS_AUTHENTICATOR=route53
+      - ACME_SERVER=staging
       - ACME_FREQUENCY=monthly
       - ACME_SECRETS_ENV_FILE=/run/secrets/lego_acme_env_file
     secrets:
