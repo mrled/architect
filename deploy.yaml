@@ -44,7 +44,7 @@
           pwd: "{{ pwd_result.stdout }}"
 
     - set_fact:
-        ssh_cmd: >
+        ssh_cmd: >-
           ssh
           -o UserKnownHostsFile={{ pwd }}/{{ workdir }}/known_hosts
           -i {{ pwd }}/{{ client_ssh_private_key_path }}
@@ -52,16 +52,16 @@
         ssh_script_path: "{{ pwd }}/{{ workdir }}/ssh-architect.sh"
 
     - set_fact:
-        ssh_script: |
+        ssh_script: |+
             #!/bin/sh
             set -eu
-            {{ ssh_cmd }}
+            {{ ssh_cmd }} "$@"
         success_msg: |
             Connecting to Architect, for debugging
             IP address              {{ architect_ip_address }}
             Host ECDSA fingerprint  {{ ssh_host_public_ecdsa_key_fingerprint }}
-            SSH connection script   {{ ssh_script_path }}
-            SSH command             {{ ssh_cmd }}
+            SSH script              {{ ssh_script_path }}
+            SSH script usage        {{ ssh_script_path }} sudo docker stack ls
 
     - name: Write SSH connection script
       copy:
