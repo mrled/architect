@@ -54,7 +54,7 @@
       --compose-file {{ architect_jenkins_swarm_compose_file }}
       {{ architect_jenkins_swarm_stack_name }}
     environment:
-      ACME_SERETS_ENV_FILE_HASH: "{{ inflwharf_secrets_hash }}"
+      ACME_SECRETS_ENV_FILE_HASH: "{{ inflwharf_secrets_hash }}"
 
   - name: Get inflatable-wharf container ID
     command: >

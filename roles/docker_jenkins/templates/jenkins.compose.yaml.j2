@@ -2,7 +2,7 @@ version: "3.5"
 services:
 
   architect-jenkins:
-    image: mrled/architect-jenkins:latest
+    image: mrled/architect-jenkins:{{ archjenks_version }}
     ports:
       - "80:8080"
       - "443:8443"
@@ -26,7 +26,7 @@ services:
       --httpsPrivateKey="/var/jenkins_cert/certificates/{{ inflwharf_domain_name }}.key"
 
   inflatable-wharf:
-    image: mrled/inflatable-wharf:latest
+    image: mrled/inflatable-wharf:{{ inflwharf_version }}
     deploy:
       replicas: 1
     environment:
@@ -65,4 +65,4 @@ volumes:
 secrets:
   acme_secrets_env_file:
     file: "{{ architect_jenkins_swarm_inflwharf_secrets_file }}"
-    name: acme_secrets_env_file_${ACME_SERETS_ENV_FILE_HASH}
+    name: acme_secrets_env_file_${ACME_SECRETS_ENV_FILE_HASH}
