@@ -16,7 +16,7 @@
       state: "present"
       disable_rollback: true
       region: "{{ aws_region }}"
-      template: "roles/cfn_architect_ci/files/architect.ci.cfn.yaml"
+      template: "{{ role_path }}/files/architect.ci.cfn.yaml"
       template_parameters:
         ArchitectUserName: "{{ architect_user }}"
         Ec2InstanceProfileName: "{{ architect_iam_profile_name }}"

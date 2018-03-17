@@ -13,7 +13,7 @@
     stack_name: "{{ architect_kms_stack_name }}"
     state: "present"
     region: "{{ aws_region }}"
-    template: "roles/cfn_architect_kms/files/architect.kms.cfn.yaml"
+    template: "{{ role_path }}/files/architect.kms.cfn.yaml"
     tags:
       Environment: Architect
   register: architect_kms_stack_result
