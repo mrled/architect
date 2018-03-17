@@ -49,7 +49,6 @@
           -o UserKnownHostsFile={{ pwd }}/{{ workdir }}/known_hosts
           -i {{ pwd }}/{{ client_ssh_private_key_path }}
           {{ architect_user }}@{{ architect_ip_address }}
-        ssh_script_path: "{{ pwd }}/{{ workdir }}/ssh-architect.sh"
 
     - set_fact:
         ssh_script: |+

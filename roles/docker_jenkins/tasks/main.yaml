@@ -31,11 +31,12 @@
       mode: 0600
 
   - name: Get MD5 hash for inflatable-wharf secrets file
-    shell: md5sum "{{ architect_jenkins_swarm_inflwharf_secrets_file }}" | cut -d ' ' -f 1
-    register: inflwharf_secrets_hash_result
+    stat:
+      path: "{{ architect_jenkins_swarm_inflwharf_secrets_file }}"
+    register: inflwharf_secrets_stat_result
   - name: Set inflwharf_secrets_hash fact
     set_fact:
-      inflwharf_secrets_hash: "{{ inflwharf_secrets_hash_result.stdout }}"
+      inflwharf_secrets_hash: "{{ inflwharf_secrets_stat_result.stat.md5 }}"
   - name: Show inflwharf_secrets_hash
     debug:
       var: inflwharf_secrets_hash
@@ -47,24 +48,31 @@
       owner: root
       mode: 0600
 
-  - name: Deploy the Docker service
+  - name: Deploy the Docker stack
     command: >
       docker stack deploy
       --compose-file {{ architect_jenkins_swarm_compose_file }}
-      {{ architect_jenkins_swarm_service_name }}
+      {{ architect_jenkins_swarm_stack_name }}
     environment:
       ACME_SERETS_ENV_FILE_HASH: "{{ inflwharf_secrets_hash }}"
+
+  - name: Get inflatable-wharf container ID
+    command: >
+      docker ps
+      --quiet
+      --filter "name={{ architect_jenkins_swarm_stack_name }}_inflatable-wharf.*"
+    register: inflwharf_container_result
 
   - name: Print successful deployment message
     vars:
       message: |
-        The docker service has been deployed!
+        The docker stack has been deployed!
 
-        The service includes an official jenkins image, and also an
-        inflatable-wharf image that handles certificate renewal via the lego
+        The stack includes the architect-jenkins service, and also an
+        inflatable-wharf service that handles certificate renewal via the lego
         Let's Encrypt client.
 
-        If this is the first time this service has been deployed, then
+        If this is the first time this stack has been deployed, then
         JENKINS WILL NOT BE AVAILBLE until inflatable-wharf has received the
         signed certificate from Let's Encrypt.
 
@@ -76,5 +84,41 @@
         <https://github.com/mrled/inflatable-wharf>
     debug:
       msg: "{{ message.split('\n') }}"
+
+  - name: Print loop message
+    vars:
+      testcmd: >
+        {{ ssh_script_path }}
+        sudo docker exec
+        {{ inflwharf_container_result.stdout }}
+        ls '/srv/inflatable-wharf/certificates'
+      message: |
+        We will now loop until the certs are generated.
+        We will loop for up to **30 minutes**, because some DNS providers can
+        be that slow.
+
+        If we time out (or you get bored),
+        cancel this and check for yourself whether the cert exists with
+            {{ testcmd }}
+        and check whether the "{{ inflwharf_domain_name }}.crt file exists"
+    debug:
+      msg: "{{ message.split('\n') }}"
+  - name: Loop, checking for signed certs from Let's Encrypt
+    shell: >
+      docker exec
+      {{ inflwharf_container_result.stdout }}
+      ls "/srv/inflatable-wharf/certificates/{{ inflwharf_domain_name }}.crt"
+      2>/dev/null
+    register: inflwharf_cert_result
+    # Note that ls errors are printed to stderr,
+    # so even if an error message contains the filename we're looking for,
+    # the loop will still properly fail.
+    until: inflwharf_cert_result.stdout.find(inflwharf_domain_name) != -1
+    delay: 30    # Wait 30 seconds between each attempt
+    retries: 60  # Retry 60 times, waiting for a total of 30 minutes
+
+  - name: Print successful certificate message
+    debug:
+      msg: Certificates exist!
 
   when: skip_architect_deploy_jenkins_swarm | bool == false
