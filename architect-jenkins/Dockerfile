@@ -12,6 +12,13 @@ ENV JENKINS_USER jenkins
 # which we will use for build agents
 ENV DOCKER_HOST_DOCKER_GID 1000
 
+# Set this to the URL that the health check should use
+# If this is not set correctly, the health check will always fail
+ENV HEALTHCHECK_URL https://example.invalid
+
+# Set this to false to ignore TLS errors
+ENV HEALTHCHECK_VERIFY_TLS true
+
 USER root
 
 # docker:   Let Jenkins issue docker commands (to bring up slaves)
@@ -26,9 +33,12 @@ RUN true \
     && true
 
 COPY entrypoint.sh /usr/local/bin/entrypoint.sh
+COPY healthcheck.sh /usr/local/bin/healthcheck.sh
+
+HEALTHCHECK --start-period=30s CMD /usr/local/bin/healthcheck.sh
 
 # NOTE: We provide our own entrypoint.sh script
 # That script runs tini with the same arguments the official script does:
 #   ENTRYPOINT ["/bin/tini", "--", "/usr/local/bin/jenkins.sh"]
 # See also https://github.com/jenkinsci/docker/blob/48011c8cd7b7e0a2576365aad558bb049bc1d261/Dockerfile-alpine#L71
-ENTRYPOINT ["/bin/tini", "--", "/usr/local/bin/entrypoint.sh"]
+ENTRYPOINT ["/sbin/tini", "--", "/usr/local/bin/entrypoint.sh"]
