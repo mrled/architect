@@ -82,8 +82,11 @@
   roles:
     - role: architect_docker_swarm_manager_preconfig
 
-- name: Deploy Docker Swarm
+- name: Initialize the Docker Swarm
   import_playbook: playbooks/docker_swarm.yaml
+  # We must set the default value here,
+  # because _naturally_ we cannot include vars_files in an import_playbook task
+  when: skip_architect_initialize_swarm | default(false) | bool == false
 
 - name: Deploy Jenkins service to Docker Swarm
   hosts: architect_host
