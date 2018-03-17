@@ -1,18 +1,18 @@
 # Architect bugs and to do list
 
+- We call the Docker volume the "jenkins data volume" in variable names, but it's mounted at /var/lib/docker, so we should change the name
+
 ## Rewrite old readme
 
 The old readme described more things, but it was using Digital Ocean.
 
 As I learn how to do those things, add them to the current version of the readme, and delete them from here.
 
-What remains to be translated into AWS from the old readme: 
+What remains to be translated into AWS from the old readme:
 
     ## Remaining tasks
 
     This is stuff from the previous incarnation (more manual, and deployed to Linode). I need to assimilate these into the latest incarnation (more automatic, and deployed to AWS).
-
-    -  Configuring StrongSwan VPN
 
     -  Apply firewall
 
@@ -34,46 +34,6 @@ What remains to be translated into AWS from the old readme:
         -  Ensure `/etc/rc.local` is executable
 
     -  I'm using public DNS for backend infrastructure, so I have `*.infra.micahrl.com` hosts that resolve to private ZeroTier IPv6 addresses
-
-    -  Create the Docker Swarm. (Replace `1.2.3.4` with the address on the VPN interface.)
-
-                docker swarm init --advertise-addr 1.2.3.4
-
-    -  Configure `docker-machine` on your workstation
-
-        In my case, I used the following to create the `docker-machine` entry
-        for the Docker host that will run my Jenkins server:
-
-            docker-machine create --driver generic --generic-ip-address architect.infra.micahrl.com --engine-storage-driver overlay2 architect
-
-        This step is only necessary once (per workstation)
-
-        -  During troubleshooting, running `docker-machine -D create ...` provides more debugging information.
-
-        -  I had to pass the `--engine-storage-driver overlay2` argument
-            because it was using `aufs` by default,
-            which was preventing the Docker daemon on architect from starting
-            after running `docker-machine create`.
-            [See also](https://github.com/docker/machine/issues/4197).
-
-    -  Configure `docker` to interact with the remote machine:
-
-            eval $(docker-machine env architect)
-
-        This step is run once per shell that you wish to use to interact with the remote Docker host
-
-    -  Set the necessary environment variables in `lego-acme-secret-env.txt`.
-
-        Mine looks like this:
-
-            GANDI_API_KEY=xxx
-
-    -  Ensure the compose file contains correct values
-
-        -  Ensure the `DOCKER_HOST_DOCKER_GID` variable matches the GID for the `docker` user on your docker host.
-        -  Ensure the paths to the HTTPS certificates are correct
-            (they're based on the domain name you give to Let's Encrypt)
-        -  Provide the correct variables to `inflatable-wharf` for your environment
 
     -  Deploy the jenkins.compose.yml file in this directory
 
