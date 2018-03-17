@@ -1,12 +1,12 @@
 ---
 
-- block:
+- name: Destroy old Architect CI stack
+  cloudformation:
+    stack_name: "{{ architect_ci_stack_name }}"
+    state: "absent"
+  when: remove_existing_architect_ci_stack | bool == true
 
-  - name: Destroy old Architect CI stack
-    cloudformation:
-      stack_name: "{{ architect_ci_stack_name }}"
-      state: "absent"
-    when: remove_existing_architect_ci_stack | bool == true
+- block:
 
   - name: Deploy the Architect CI template
     cloudformation:
@@ -33,16 +33,28 @@
       tags:
         Environment: Architect
     register: architect_ci_stack_result
-
-  - set_fact:
-      architect_ip_address: "{{ architect_ci_stack_result.stack_outputs.ArchitectIpAddress }}"
-
-  - name: Save known_hosts file
-    copy:
-      content: "{{ architect_ip_address }} {{ ssh_host_public_ecdsa_key }}"
-      dest: "{{ workdir }}/known_hosts"
+    when: skip_architect_ci_stack | bool == false
 
   rescue:
   - debug: var=architect_ci_stack_result
   - fail:
-      msg: Deployment has failed :(
+      msg: Architect CI deployment has failed :(
+
+- name: Read Architect CI stack output
+  cloudformation_facts:
+    aws_access_key: "{{ aws_access_key }}"
+    aws_secret_key: "{{ aws_secret_key }}"
+    stack_name: "{{ architect_ci_stack_name }}"
+    region: "{{ aws_region }}"
+
+- debug:
+    var: cloudformation.{{ architect_ci_stack_name }}.stack_outputs
+
+- set_fact:
+    architect_ip_address: "{{ cloudformation[architect_ci_stack_name].stack_outputs.ArchitectIpAddress }}"
+
+- name: Save known_hosts file
+  copy:
+    content: "{{ architect_ip_address }} {{ ssh_host_public_ecdsa_key }}"
+    dest: "{{ workdir }}/known_hosts"
+
