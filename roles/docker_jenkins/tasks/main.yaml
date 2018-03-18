@@ -6,9 +6,13 @@
     getent:
       database: group
       key: docker
-  - set_fact:
+
+  - name: Set docker_gid
+    set_fact:
       docker_gid: "{{ getent_group.docker[1] }}"
-  - debug:
+
+  - name: Show docker_gid
+    debug:
       msg: "docker GID: {{ docker_gid }}"
 
   - name: Create docker_jenkins configuration directory
@@ -34,9 +38,11 @@
     stat:
       path: "{{ architect_jenkins_swarm_inflwharf_secrets_file }}"
     register: inflwharf_secrets_stat_result
-  - name: Set inflwharf_secrets_hash fact
+
+  - name: Set inflwharf_secrets_hash
     set_fact:
       inflwharf_secrets_hash: "{{ inflwharf_secrets_stat_result.stat.md5 }}"
+
   - name: Show inflwharf_secrets_hash
     debug:
       var: inflwharf_secrets_hash
@@ -64,61 +70,45 @@
     register: inflwharf_container_result
 
   - name: Print successful deployment message
-    vars:
-      message: |
-        The docker stack has been deployed!
-
-        The stack includes the architect-jenkins service, and also an
-        inflatable-wharf service that handles certificate renewal via the lego
-        Let's Encrypt client.
-
-        If this is the first time this stack has been deployed, then
-        JENKINS WILL NOT BE AVAILBLE until inflatable-wharf has received the
-        signed certificate from Let's Encrypt.
-
-        Depending on your DNS provider, this may take from a few minutes up to
-        half an hour.
-
-        For more information on how `inflatable-wharf` works, including
-        troubleshooting steps and how to view logs, see
-        <https://github.com/mrled/inflatable-wharf>
     debug:
-      msg: "{{ message.split('\n') }}"
+      msg: "{{ stack_deploy_success_msg.split('\n') }}"
 
-  - name: Print loop message
-    vars:
-      testcmd: >
-        {{ ssh_script_path }}
-        sudo docker exec
-        {{ inflwharf_container_result.stdout }}
-        ls '/srv/inflatable-wharf/certificates'
-      message: |
-        We will now loop until the certs are generated.
-        We will loop for up to **30 minutes**, because some DNS providers can
-        be that slow.
-
-        If we time out (or you get bored),
-        cancel this and check for yourself whether the cert exists with
-            {{ testcmd }}
-        and check whether the "{{ inflwharf_domain_name }}.crt file exists"
+  - name: Print inflatable-wharf loop message
     debug:
-      msg: "{{ message.split('\n') }}"
+      msg:  "{{ inflwharf_cert_check_loop_msg.split('\n') }}"
+
   - name: Loop, checking for signed certs from Let's Encrypt
-    shell: >
-      docker exec
-      {{ inflwharf_container_result.stdout }}
-      ls "/srv/inflatable-wharf/certificates/{{ inflwharf_domain_name }}.crt"
-      2>/dev/null
+    shell: "{{ inflwharf_cert_check_cmd }} 2>/dev/null"
     register: inflwharf_cert_result
     # Note that ls errors are printed to stderr,
     # so even if an error message contains the filename we're looking for,
     # the loop will still properly fail.
     until: inflwharf_cert_result.stdout.find(inflwharf_domain_name) != -1
     delay: 30    # Wait 30 seconds between each attempt
-    retries: 60  # Retry 60 times, waiting for a total of 30 minutes
+    retries: 60  # Retry 60 times, waiting for a max wait time of 30 minutes
 
-  - name: Print successful certificate message
+  - name: Print inflatable-wharf successful loop message
+    vars:
+      message: |-
+        Certificates exist! ls result
+        {{ inflwharf_cert_result.stdout }}
     debug:
-      msg: Certificates exist!
+      msg: "{{ message.split('\n') }}"
+
+  - name: Print architect-jenkins loop message
+    debug:
+      msg: "{{ archjenkins_healthcheck_loop_msg.split('\n') }}"
+
+  - name: Loop, waiting for healthy Jenkins container
+    shell: "{{ archjenkins_healthcheck_cmd }} --quiet"
+    register: archjenks_health_result
+    until: archjenks_health_result.stdout | length == 12
+    delay: 15    # Wait 15 seconds between each attempt
+    retries: 8   # Retry 8 times, waiting for a max wait time of 2 minutes
+
+  - name: Print architect-jenkins successful loop message
+    debug:
+      msg: "The Jenkins container is healthy! Container ID: '{{ archjenks_health_result.stdout }}'"
+
 
   when: skip_architect_deploy_jenkins_swarm | bool == false

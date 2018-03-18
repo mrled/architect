@@ -8,6 +8,8 @@ services:
       - "443:8443"
     environment:
       - DOCKER_HOST_DOCKER_GID={{ docker_gid }}
+      - HEALTHCHECK_URL=https://localhost:8443
+      - HEALTHCHECK_VERIFY_TLS=false
     volumes:
       - jenkins_home:/var/jenkins_home
       - jenkins_cert:/var/jenkins_cert
