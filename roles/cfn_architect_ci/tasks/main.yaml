@@ -20,7 +20,7 @@
       template_parameters:
         ArchitectUserName: "{{ architect_user }}"
         Ec2InstanceProfileName: "{{ architect_iam_profile_name }}"
-        VpnIpsecUserConf: "{{ lookup('file', 'ipsec_architect.conf') }}"
+        VpnIpsecUserConf: "{{ algo_ipsec_conf }}"
         VpnIpsecUserSecrets: "{{ algo_ipsec_secrets }}"
         VpnKeyEncrypted: "{{ algo_vpn_key_kmsencrypted }}"
         VpnCert: "{{ algo_vpn_cert_b64 | b64decode }}"
