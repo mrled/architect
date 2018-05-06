@@ -7,10 +7,10 @@
   pre_tasks:
     - block:
       - name: Create working directory
-        command: mkdir {{ workdir }}
-        args:
-          creates: "{{ workdir }}"
-
+        file:
+          path: "{{ workdir }}"
+          state: directory
+          mode: 0700
       - import_tasks: tasks/process_ssh_client_key.yaml
       - import_tasks: tasks/process_ssh_host_key.yaml
 
