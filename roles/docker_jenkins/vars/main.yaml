@@ -31,7 +31,7 @@ inflwharf_cert_check_loop_msg: |
   If we time out (or you get bored),
   cancel this and check for yourself whether the cert exists with
 
-      {{ ssh_script_path }} {{ inflwharf_cert_check_cmd }}
+      {{ ssh_script_path }} sudo {{ inflwharf_cert_check_cmd }}
 
   and check whether the '{{ inflwharf_domain_name }}.crt' file exists
 

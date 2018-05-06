@@ -69,6 +69,9 @@
       --filter "name={{ architect_jenkins_swarm_stack_name }}_inflatable-wharf.*"
     register: inflwharf_container_result
 
+  - name: Show the container result
+    debug: var=inflwharf_container_result
+
   - name: Print successful deployment message
     debug:
       msg: "{{ stack_deploy_success_msg.split('\n') }}"
