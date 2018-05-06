@@ -19,11 +19,10 @@
       template: "{{ role_path }}/files/architect.ci.cfn.yaml"
       template_parameters:
         ArchitectUserName: "{{ architect_user }}"
-        Ec2InstanceProfileName: "{{ architect_iam_profile_name }}"
-        KmsId: "{{ architect_kms_id }}"
         SshClientPublicKey: "{{ lookup('file', client_ssh_public_key_path) }}"
-        SshHostEcdsaKeyEncrypted: "{{ architect_ssh_host_ecdsa_key_kmsencrypted }}"
         JenkinsDataVolumeDevice: "{{ architect_docker_volume_device }}"
+        DeployBucketName: "{{ deploy_bucket.name }}"
+        DeployBucketArn: "{{ deploy_bucket.arn }}"
       tags:
         Environment: Architect
     register: architect_ci_stack_result
@@ -47,8 +46,13 @@
 - set_fact:
     architect_ip_address: "{{ cloudformation[architect_ci_stack_name].stack_outputs.ArchitectIpAddress }}"
 
-- name: Save known_hosts file
-  copy:
-    content: "{{ architect_ip_address }} {{ ssh_host_public_ecdsa_key }}"
-    dest: "{{ workdir }}/known_hosts"
+- name: Retrieve SSH known_hosts_localhost
+  aws_s3:
+    bucket: "{{ deploy_bucket.name }}"
+    mode: get
+    overwrite: different
+    object: "{{ architect_ci_stack_name }}/known_hosts_localhost"
+    dest: "{{ workdir }}/known_hosts_localhost"
 
+- name: Save known_hosts file (replacing localhost with the IP address)
+  shell: sed 's/^localhost/{{ architect_ip_address }}/g' '{{ workdir }}/known_hosts_localhost' > '{{ workdir }}/known_hosts'

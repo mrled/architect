@@ -1,4 +1,6 @@
-- name: Decrypt local items
+---
+
+- name: Deploy base server
   hosts: localhost
   vars_files:
     - architect.cfg
@@ -12,31 +14,11 @@
           state: directory
           mode: 0700
       - import_tasks: tasks/process_ssh_client_key.yaml
-      - import_tasks: tasks/process_ssh_host_key.yaml
-
-- name: Deploy base server
-  hosts: localhost
-  vars_files:
-    - architect.cfg
-    - architect.vault.cfg
 
   roles:
-    - role: cfn_architect_kms
-    - role: kms_encrypt_secrets
     - role: cfn_architect_ci
 
   post_tasks:
-
-    # The KMS stack is only used during CloudFormation::Init,
-    # so we delete it here to prevent unnecessary charges
-    # and to prevent non-root users from retrieving secrets after initial deployment
-    - name: Delete the KMS stack
-      cloudformation:
-        aws_access_key: "{{ aws_access_key }}"
-        aws_secret_key: "{{ aws_secret_key }}"
-        region: "{{ aws_region }}"
-        stack_name: "{{ architect_kms_stack_name }}"
-        state: absent
 
     - name: Add new instance to host group
       add_host:
@@ -70,7 +52,6 @@
         success_msg: |
             Connecting to Architect, for debugging
             IP address              {{ architect_ip_address }}
-            Host ECDSA fingerprint  {{ ssh_host_public_ecdsa_key_fingerprint }}
             SSH script              {{ ssh_script_path }}
             SSH script usage        {{ ssh_script_path }} sudo docker stack ls
 
