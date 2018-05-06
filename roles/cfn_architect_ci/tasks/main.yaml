@@ -20,12 +20,6 @@
       template_parameters:
         ArchitectUserName: "{{ architect_user }}"
         Ec2InstanceProfileName: "{{ architect_iam_profile_name }}"
-        VpnIpsecUserConf: "{{ algo_ipsec_conf }}"
-        VpnIpsecUserSecrets: "{{ algo_ipsec_secrets }}"
-        VpnKeyEncrypted: "{{ algo_vpn_key_kmsencrypted }}"
-        VpnCert: "{{ algo_vpn_cert_b64 | b64decode }}"
-        VpnCaCert: "{{ algo_cacert_b64 | b64decode }}"
-        VpnKeepaliveHost: "{{ vpn_keepalive_host }}"
         KmsId: "{{ architect_kms_id }}"
         SshClientPublicKey: "{{ lookup('file', client_ssh_public_key_path) }}"
         SshHostEcdsaKeyEncrypted: "{{ architect_ssh_host_ecdsa_key_kmsencrypted }}"

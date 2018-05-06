@@ -1,0 +1,67 @@
+---
+
+- name: Install VPN software
+  apt:
+    name: "{{ item }}"
+    update_cache: yes
+  with_items:
+  - strongswan-charon
+  - strongswan-pki
+
+- name: Copy the VPN configuration files
+  copy:
+    content: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+    owner: "{{ item.owner }}"
+    group: "{{ item.group }}"
+    mode: "{{ item.mode }}"
+  with_items:
+    - content: "{{ algo_ipsec_conf }}"
+      dest: /etc/ipsec.conf
+      owner: root
+      group: root
+      mode: "0400"
+    - content: "{{ algo_ipsec_secrets }}"
+      dest: /etc/ipsec.secrets
+      owner: root
+      group: root
+      mode: "0400"
+    - content: "{{ algo_vpn_key }}"
+      dest: /etc/ipsec.d/private/architect.key
+      owner: root
+      group: root
+      mode: "0400"
+    - content: "{{ algo_vpn_cert }}"
+      dest: /etc/ipsec.d/certs/architect.crt
+      owner: root
+      group: root
+      mode: "0400"
+    - content: "{{ algo_cacert }}"
+      dest: /etc/ipsec.d/cacerts/cacert.pem
+      owner: root
+      group: root
+      mode: "0400"
+  notify:
+    - restart-strongswan
+
+- name: Create a group for the VPN keepalive user
+  group:
+    name: vpnkeepalive
+    system: yes
+
+- name: Create the VPN keepalive user
+  user:
+    name: vpnkeepalive
+    group: vpnkeepalive
+    home: /nonexistent
+    create_home: no
+    shell: /bin/sh
+    system: yes
+
+- name: Set the VPN keepalive cron job
+  copy:
+    content: "*/5 * * * * vpnkeepalive ping -c 1 '{{ vpn_keepalive_host }}'"
+    dest: /etc/cron.d/vpn-tunnel-keepalive
+    owner: root
+    group: root
+    mode: 0644
