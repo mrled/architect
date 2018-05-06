@@ -10,7 +10,7 @@
 
 - name: Copy the VPN configuration files
   copy:
-    content: "{{ item.src }}"
+    content: "{{ item.content }}"
     dest: "{{ item.dest }}"
     owner: "{{ item.owner }}"
     group: "{{ item.group }}"
@@ -54,7 +54,7 @@
     name: vpnkeepalive
     group: vpnkeepalive
     home: /nonexistent
-    create_home: no
+    createhome: no
     shell: /bin/sh
     system: yes
 
