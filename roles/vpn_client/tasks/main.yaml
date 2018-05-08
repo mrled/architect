@@ -60,7 +60,8 @@
 
 - name: Set the VPN keepalive cron job
   copy:
-    content: "*/5 * * * * vpnkeepalive ping -c 1 '{{ vpn_keepalive_host }}'"
+    content: >+
+      "*/5 * * * * vpnkeepalive ping -c 1 '{{ vpn_keepalive_host }}'"
     dest: /etc/cron.d/vpn-tunnel-keepalive
     owner: root
     group: root

@@ -84,10 +84,12 @@
     - name: retrieve swarm manager token
       shell: docker swarm join-token -q manager
       register: swarm_manager_token
+      changed_when: false
 
     - name: retrieve swarm worker token
       shell: docker swarm join-token -q worker
       register: swarm_worker_token
+      changed_when: false
 
     - name: populate list of manager ips
       add_host:

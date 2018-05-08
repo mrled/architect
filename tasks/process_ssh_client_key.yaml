@@ -7,6 +7,7 @@
 - name: Get SSH client public ECDSA key
   command: ssh-keygen -y -f "{{ client_ssh_private_key_path }}"
   register: ssh_client_public_ecdsa_key_result
+  changed_when: false
 
 - name: Save SSH client public ECDSA key
   copy:
