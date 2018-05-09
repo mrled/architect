@@ -35,7 +35,7 @@ services:
       - ACME_LETSENCRYPT_EMAIL={{ inflwharf_letsencrypt_email }}
       - ACME_DOMAIN={{ inflwharf_domain_name }}
       - ACME_DNS_AUTHENTICATOR=route53
-      - ACME_SERVER=staging
+      - ACME_SERVER={{ inflwharf_lets_encrypt_server }}
       - ACME_FREQUENCY=monthly
       - ACME_SECRETS_ENV_FILE=/run/secrets/acme_secrets_env_file
     secrets:
