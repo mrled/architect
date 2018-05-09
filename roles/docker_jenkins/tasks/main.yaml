@@ -62,12 +62,15 @@
     environment:
       ACME_SECRETS_ENV_FILE_HASH: "{{ inflwharf_secrets_hash }}"
 
-  - name: Get inflatable-wharf container ID
+  - name: Get inflatable-wharf container ID in a short loop, because it doesn't seem to come up immediately
     command: >
       docker ps
       --quiet
       --filter "name={{ architect_jenkins_swarm_stack_name }}_inflatable-wharf.*"
     register: inflwharf_container_result
+    until: inflwharf_container_result.stdout != ""
+    delay: 5    # Wait 5 seconds between each attempt
+    retries: 3  # Retry 3 times, waiting for a max wait time of 15 seconds
 
   - name: Show the container result
     debug: var=inflwharf_container_result
