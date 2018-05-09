@@ -114,7 +114,20 @@
 
   - name: Print architect-jenkins successful loop message
     debug:
-      msg: "The Jenkins container is healthy! Container ID: '{{ archjenks_health_result.stdout }}'"
+      msg: |+
+        The Jenkins container is healthy!
+
+        Container ID = '{{ archjenks_health_result.stdout }}'
+
+        If you haven't logged in to this Jenkins server yet, your first login must be with the initial admin password.
+        To see this password, run
+
+            {{ ssh_script_path }} sudo docker exec {{ archjenks_health_result.stdout }} cat /var/jenkins_home/secrets/initialAdminPassword
+
+        We generated a cert for this domain, so ensure DNS and networking allows Architect to be reached at
+
+            https://{{ inflwharf_domain_name }}/
+
 
 
   when: skip_architect_deploy_jenkins_swarm | bool == false
