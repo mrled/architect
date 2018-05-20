@@ -60,4 +60,7 @@
       name: docker-ce
       state: latest
 
+  - name: Ensure Docker is started
+    shell: systemctl start docker
+
   when: skip_architect_docker_install | bool == false
