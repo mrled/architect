@@ -44,26 +44,23 @@
           -i {{ pwd }}/{{ client_ssh_private_key_path }}
           {{ architect_user }}@{{ architect_ip_address }}
 
-    - set_fact:
-        ssh_script: |+
-            #!/bin/sh
-            set -eu
-            {{ ssh_cmd }} "$@"
-        success_msg: |
-            Connecting to Architect, for debugging
-            IP address              {{ architect_ip_address }}
-            SSH script              {{ ssh_script_path }}
-            SSH script usage        {{ ssh_script_path }} sudo docker stack ls
-
     - name: Write SSH connection script
       copy:
-        content: "{{ ssh_script }}"
+        content: |+
+          #!/bin/sh
+          set -eu
+          {{ ssh_cmd }} "$@"
         dest: "{{ ssh_script_path }}"
         mode: 0700
 
     - name: Success!
       debug:
-        msg: "{{ success_msg.split('\n') }}"
+        msg: |+
+          Connecting to Architect, for debugging
+          IP address              {{ architect_ip_address }}
+          SSH script              {{ ssh_script_path }}
+          SSH script usage        {{ ssh_script_path }} sudo docker stack ls
+
 
 - name: Configure the server
   hosts: architect_host
