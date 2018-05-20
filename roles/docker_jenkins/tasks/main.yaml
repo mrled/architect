@@ -76,11 +76,37 @@
 
   - name: Print successful deployment message
     debug:
-      msg: "{{ stack_deploy_success_msg.split('\n') }}"
+      msg: |
+        The docker stack has been deployed!
+
+        The stack includes the architect-jenkins service, and also an
+        inflatable-wharf service that handles certificate renewal via the lego
+        Let's Encrypt client.
+
+        If this is the first time this stack has been deployed, then
+        JENKINS WILL NOT BE AVAILBLE until inflatable-wharf has received the
+        signed certificate from Let's Encrypt.
+
+        Depending on your DNS provider, this may take from a few minutes up to
+        half an hour.
+
+        For more information on how `inflatable-wharf` works, including
+        troubleshooting steps and how to view logs, see
+        <https://github.com/mrled/inflatable-wharf>
 
   - name: Print inflatable-wharf loop message
     debug:
-      msg:  "{{ inflwharf_cert_check_loop_msg.split('\n') }}"
+      msg: |
+        We will now loop until the certs are generated.
+        We will loop for up to **30 minutes**, because some DNS providers can
+        be that slow.
+
+        If we time out (or you get bored),
+        cancel this and check for yourself whether the cert exists with
+
+            {{ ssh_script_path }} sudo {{ inflwharf_cert_check_cmd }}
+
+        and check whether the '{{ inflwharf_domain_name }}.crt' file exists
 
   - name: Loop, checking for signed certs from Let's Encrypt
     shell: "{{ inflwharf_cert_check_cmd }} 2>/dev/null"
@@ -93,16 +119,23 @@
     retries: 60  # Retry 60 times, waiting for a max wait time of 30 minutes
 
   - name: Print inflatable-wharf successful loop message
-    vars:
-      message: |-
+    debug:
+      msg: |
         Certificates exist! ls result
         {{ inflwharf_cert_result.stdout }}
-    debug:
-      msg: "{{ message.split('\n') }}"
 
   - name: Print architect-jenkins loop message
     debug:
-      msg: "{{ archjenkins_healthcheck_loop_msg.split('\n') }}"
+      msg: |
+        We will now loop until Jenkins comes up successfully
+        We will only wait for a few minutes; if Jenkins doesn't start
+        successfully by then, investigate whether the health check is working.
+
+        If this times out, you can check for a healthy Jenkins container using
+
+            {{ ssh_script_path }} sudo {{ archjenkins_healthcheck_cmd }}
+
+        and check that the architect-jenkins container is started and healthy.
 
   - name: Loop, waiting for healthy Jenkins container
     shell: "{{ archjenkins_healthcheck_cmd }} --quiet"
