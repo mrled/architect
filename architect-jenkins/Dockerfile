@@ -1,4 +1,10 @@
-FROM jenkins/jenkins:lts-alpine
+# architect-jenkins
+# A simple set of customizations to the official Jenkins container
+
+# Find the latest **LTS** version at https://jenkins.io/download/
+# See available tags at https://hub.docker.com/r/jenkins/jenkins/tags/
+# I recomment the latest LTS Alpine release
+FROM jenkins/jenkins:2.121.2-alpine
 
 # Must match user ARG in the upstream Jenkins Dockerfile
 ENV JENKINS_USER jenkins
