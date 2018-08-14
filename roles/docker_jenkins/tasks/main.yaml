@@ -57,9 +57,14 @@
     command: >
       docker stack deploy
       --compose-file {{ architect_jenkins_swarm_compose_file }}
+      --prune
       {{ architect_jenkins_swarm_stack_name }}
     environment:
       ACME_SECRETS_ENV_FILE_HASH: "{{ inflwharf_secrets_hash }}"
+    register: docker_stack_deploy_result
+
+  - name: Show 'docker stack deploy' output
+    debug: var=docker_stack_deploy_result
 
   - name: Get inflatable-wharf container ID in a short loop, because it doesn't seem to come up immediately
     command: >
@@ -93,6 +98,13 @@
         For more information on how `inflatable-wharf` works, including
         troubleshooting steps and how to view logs, see
         <https://github.com/mrled/inflatable-wharf>
+
+        Note that you may need to force restart the architect-jenkins service
+        if you have deployed previously, changed some variables in the compose
+        file, and deployed again, but your container configuration doesn't seem
+        to have changed. This is a bug(?) in Docker. Restart it like so
+
+            {{ ssh_script_path }} sudo docker service update --force {{ architect_jenkins_swarm_stack_name }}_architect-jenkins
 
   - name: Print inflatable-wharf loop message
     debug:
