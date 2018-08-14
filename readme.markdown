@@ -97,6 +97,25 @@ Once you have these things configured, you can deploy with a simple command:
 - <https://wiki.jenkins.io/display/JENKINS/Docker+Plugin>
     - Docker URL: `unix:///var/run/docker.sock`
 
+### Creating deploy keys
+
+When creating GitHub deploy keys,
+I name them after the API client that will use them,
+the owner and name of the repo they belong to,
+and their permissions.
+
+For instance, a deploy key with the name
+`architect-jenkins_mrled_mrled.github.io_ro`
+is used by `architect-jenkins`,
+for a repo with owner `mrled` and name `mrled.github.io`,
+and it has read only (`ro`) access to the repository.
+
+I also always put the consumer in the comment.
+
+To create the key, I use a command like this:
+
+    ssh-keygen -t ed25519 -a 100 -f ./architect-jenkins_mrled_mrled.github.io_ro -q -N "" -C "architect.internal.micahrl.com"
+
 ## Troubleshooting
 
 ### After a failed stack deployment
