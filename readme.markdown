@@ -92,6 +92,11 @@ Once you have these things configured, you can deploy with a simple command:
 
     ansible-playbook deploy.yaml --ask-vault-pass
 
+## Configuring Jenkins
+
+- <https://wiki.jenkins.io/display/JENKINS/Docker+Plugin>
+    - Docker URL: `unix:///var/run/docker.sock`
+
 ## Troubleshooting
 
 ### After a failed stack deployment
