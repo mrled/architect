@@ -92,29 +92,56 @@ Once you have these things configured, you can deploy with a simple command:
 
     ansible-playbook deploy.yaml --ask-vault-pass
 
-## Configuring Jenkins
+## Creating new projects in Jenkins
+
+-   Add a `Jenkinsfile` and a docker build file to whatever repo you're trying to create
+
+    See the `mrled.github.io-source` repo for example.
+
+-   Create new GitHub deploy key
+
+    Name them after API client that will use them,
+    the owner and name of the repo they belong to,
+    and their permissions.
+
+    For instance, a deploy key with the name
+    `architect-jenkins_mrled_mrled.github.io_ro`
+    is used by `architect-jenkins`,
+    for a repo with owner `mrled` and name `mrled.github.io`,
+    and it has read only (`ro`) access to the repository.
+
+    I also always put the consumer in the comment.
+
+    To create the key, I use a command like this:
+
+        ssh-keygen -t ed25519 -a 100 -f ./architect-jenkins_mrled_mrled.github.io_ro -q -N "" -C "architect.internal.micahrl.com"
+
+    Finally, don't forget to actually add the deploy key to GitHub
+
+-   Configure a new project in Jenkins
+
+    -   First upload the deploy key created previously to Jenkins
+
+    -   Create a new pipeline project and configure repo and credential
+
+    -   Set it to poll in the build triggers section
+
+        This will poll once every 5 minutes at minute 0, 5, 10, etc
+
+            */5 * * * *
+
+        This will poll once every 5 minutes,
+        but NOT exactly at the 0, 5, 10 etc marks -
+        better to avoid GitHub API rate limiting
+
+            H/5 * * * *
+
+## Notes from initial Jenkins configuration
+
+These notes aren't complete, but they'll help in case I need to start over.
 
 - <https://wiki.jenkins.io/display/JENKINS/Docker+Plugin>
     - Docker URL: `unix:///var/run/docker.sock`
-
-### Creating deploy keys
-
-When creating GitHub deploy keys,
-I name them after the API client that will use them,
-the owner and name of the repo they belong to,
-and their permissions.
-
-For instance, a deploy key with the name
-`architect-jenkins_mrled_mrled.github.io_ro`
-is used by `architect-jenkins`,
-for a repo with owner `mrled` and name `mrled.github.io`,
-and it has read only (`ro`) access to the repository.
-
-I also always put the consumer in the comment.
-
-To create the key, I use a command like this:
-
-    ssh-keygen -t ed25519 -a 100 -f ./architect-jenkins_mrled_mrled.github.io_ro -q -N "" -C "architect.internal.micahrl.com"
 
 ## Troubleshooting
 
