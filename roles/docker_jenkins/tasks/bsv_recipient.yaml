@@ -1,0 +1,20 @@
+- block:
+  - name: Save recipient.pubkey.gpg
+    copy:
+      content: "{{ bsv_recipient_gpg_asc }}"
+      dest: "{{ architect_jenkins_backup_gpg_recipient_pubkey }}"
+      owner: root
+      mode: 0600
+
+  - name: Get MD5 hash for recipient.pubkey.gpg
+    stat:
+      path: "{{ architect_jenkins_backup_gpg_recipient_pubkey }}"
+    register: bsv_recipient_stat_result
+
+  - name: Set bsv_recipient_hash
+    set_fact:
+      bsv_recipient_hash: "{{ bsv_recipient_stat_result.stat.md5 }}"
+
+  - name: Show bsv_recipient_hash
+    debug:
+      var: bsv_recipient_hash

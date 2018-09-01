@@ -23,28 +23,14 @@
       group: root
       mode: 0700
 
-  - name: Save inflatable-wharf secrets file
-    copy:
-      content: |
-        AWS_ACCESS_KEY_ID={{ inflwharf_aws_access_key }}
-        AWS_SECRET_ACCESS_KEY={{ inflwharf_aws_secret_key }}
-      dest: "{{ architect_jenkins_swarm_inflwharf_secrets_file }}"
-      owner: root
-      group: root
-      mode: 0600
-
-  - name: Get MD5 hash for inflatable-wharf secrets file
-    stat:
-      path: "{{ architect_jenkins_swarm_inflwharf_secrets_file }}"
-    register: inflwharf_secrets_stat_result
-
-  - name: Set inflwharf_secrets_hash
-    set_fact:
-      inflwharf_secrets_hash: "{{ inflwharf_secrets_stat_result.stat.md5 }}"
-
-  - name: Show inflwharf_secrets_hash
-    debug:
-      var: inflwharf_secrets_hash
+  - name: Save/hash inflwh_secrets
+    import_tasks: inflwh_secrets.yaml
+  - name: Save/hash bsv_config
+    import_tasks: bsv_config.yaml
+  - name: Save/hash bsv_recipient
+    import_tasks: bsv_recipient.yaml
+  - name: Save/hash bsv_secrets
+    import_tasks: bsv_secrets.yaml
 
   - name: Save the Docker compose file
     template:
@@ -61,6 +47,9 @@
       {{ architect_jenkins_swarm_stack_name }}
     environment:
       ACME_SECRETS_ENV_FILE_HASH: "{{ inflwharf_secrets_hash }}"
+      BSV_CONFIG_PSD1_HASH: "{{ bsv_config_hash }}"
+      BSV_GPG_RECIPIENT_PUBKEY_HASH: "{{ bsv_recipient_hash }}"
+      BSV_AWS_SECRETS_FILE_HASH: "{{ bsv_aws_secrets_hash }}"
     register: docker_stack_deploy_result
 
   - name: Show 'docker stack deploy' output
