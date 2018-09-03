@@ -1,16 +1,44 @@
 ---
 
+# CloudFormation stack names
+architect_ci_stack_name: ArchitectCi
+
+# Name of the admin user on the Architect EC2 instance
+architect_user: architect
+
+# Device name for the Jenkins data volume on the Architect EC2 instance
+# Will create an EBS volume that is _not_ deleted on termination with this device name
+architect_docker_volume_device: xvdj
+
+# The mount point for the Jenkins data volume on the Architecft EC2 instance
+architect_docker_volume_mountpoint: /var/lib/docker
+
+client_ssh_private_key_path: "{{ workdir }}/architect.pem"
+client_ssh_public_key_path: "{{ client_ssh_private_key_path }}.pub"
+ssh_script_path: "{{ workdir }}/ssh-architect.sh"
+
 ##
-#### User-managed variables
+#### Values retrieved from the vault:
 ##
 
-# Your AWS region
-aws_region: us-east-2
+# inflatable-wharf access and secret key
+# These credentials are separate from the deployment credentials (above)
+# because these are permanently saved to your EC2 instance
+# and therefore should have restricted settings to update your zone
+inflwharf_aws_access_key: "{{ vault_inflwharf_aws_access_key }}"
+inflwharf_aws_secret_key: "{{ vault_inflwharf_aws_secret_key }}"
 
-# The bucket we use during deployments
-deploy_bucket:
-    name: third-jersey-deployments
-    arn: arn:aws:s3:::third-jersey-deployments
+# bsv access and secret key
+# These credentials are separate from the deployment credentials
+# They should only allow uploading to the autobackup S3 bucket
+bsv_aws_access_key: "{{ vault_bsv_aws_access_key }}"
+bsv_aws_secret_key: "{{ vault_bsv_aws_secret_key }}"
+
+# Generate SSH client key
+# Generate a client key that we can use to connect to the architect instance
+# We do this ahead of time so that its saved to the repo, encrypted in the vault
+# ssh-keygen -q -f ./architect.pem -N '' -t ecdsa && cat ./architect.pem | base64
+architect_ssh_client_ecdsa_key_b64: "{{ vault_architect_ssh_client_ecdsa_key_b64 }}"
 
 # The VPN host - either an IP address or a domain name
 algo_vpn_host: newtroy.micahrl.com
@@ -82,6 +110,12 @@ algo_cacert: |
     AiEAtioe8S83H2rohtjtGpuWkp9TrtdXONQfi4Wywg5ahCsCIQDCm9/WQV1j/0yH
     LOyD/wwFOIwDZew/9ZsacfMqMc8dsg==
     -----END CERTIFICATE-----
+
+# Get the user's VPN cert and private key, generated from Algo
+# openssl pkcs12 -in "architect.p12" -clcerts -nokeys -passin pass:$ALGO_GENERATED_PKCS12PASS 2>/dev/null
+# openssl pkcs12 -in "architect.p12" -nocerts -passin pass:$ALGO_GENERATED_PKCS12PASS -nodes 2>/dev/null
+algo_vpn_cert: "{{ vault_algo_vpn_cert }}"
+algo_vpn_key: "{{ vault_algo_vpn_key }}"
 
 # The version of the architect-jenkins Docker image to use
 # https://hub.docker.com/r/mrled/architect-jenkins/
@@ -178,82 +212,3 @@ bsv_recipient_gpg_asc: |
 bsv_recipient_id: 699A6782
 # S3 bucket to upload encrypted backup to
 bsv_s3_bucket: backups-autobackup-89d9f33ec6b04b22b358c1fca9844264c063ae6b
-
-##
-#### Values retrieved from the vault:
-##
-
-# Credentials used by this Ansible playbook
-aws_access_key: "{{ vault_aws_access_key }}"
-aws_secret_key: "{{ vault_aws_secret_key }}"
-
-# inflatable-wharf access and secret key
-# These credentials are separate from the deployment credentials (above)
-# because these are permanently saved to your EC2 instance
-# and therefore should have restricted settings to update your zone
-inflwharf_aws_access_key: "{{ vault_inflwharf_aws_access_key }}"
-inflwharf_aws_secret_key: "{{ vault_inflwharf_aws_secret_key }}"
-
-# bsv access and secret key
-# These credentials are separate from the deployment credentials
-# They should only allow uploading to the autobackup S3 bucket
-bsv_aws_access_key: "{{ vault_bsv_aws_access_key }}"
-bsv_aws_secret_key: "{{ vault_bsv_aws_secret_key }}"
-
-# Get the user's VPN cert and private key, generated from Algo
-# openssl pkcs12 -in "architect.p12" -clcerts -nokeys -passin pass:$ALGO_GENERATED_PKCS12PASS 2>/dev/null
-# openssl pkcs12 -in "architect.p12" -nocerts -passin pass:$ALGO_GENERATED_PKCS12PASS -nodes 2>/dev/null
-algo_vpn_cert: "{{ vault_algo_vpn_cert }}"
-algo_vpn_key: "{{ vault_algo_vpn_key }}"
-
-# Generate SSH client key
-# Generate a client key that we can use to connect to the architect instance
-# We do this ahead of time so that its saved to the repo, encrypted in the vault
-# ssh-keygen -q -f ./architect.pem -N '' -t ecdsa && cat ./architect.pem | base64
-architect_ssh_client_ecdsa_key_b64: "{{ vault_architect_ssh_client_ecdsa_key_b64 }}"
-
-##
-#### Variables probably not worth changing
-##
-
-# The workdir should not be changed, because it may be hardcoded elsewhere
-workdir: workdir
-
-# Workdir items:
-known_hosts_file: "{{ workdir }}/known_hosts"
-client_ssh_private_key_path: "{{ workdir }}/architect.pem"
-client_ssh_public_key_path: "{{ client_ssh_private_key_path }}.pub"
-ssh_script_path: "{{ workdir }}/ssh-architect.sh"
-
-# CloudFormation stack names
-architect_ci_stack_name: ArchitectCi
-
-# Name of the admin user on the Architect EC2 instance
-architect_user: architect
-
-# Device name for the Jenkins data volume on the Architect EC2 instance
-# Will create an EBS volume that is _not_ deleted on termination with this device name
-architect_docker_volume_device: xvdj
-
-# The mount point for the Jenkins data volume on the Architecft EC2 instance
-architect_docker_volume_mountpoint: /var/lib/docker
-
-# Common values we'll need to use for the Jenkins service,
-# but that shouldn't need to be changed for different environments
-architect_config_dir: /etc/architect
-architect_jenkins_swarm_config_dir: "{{ architect_config_dir }}/jenkins-swarm"
-architect_jenkins_swarm_compose_file: "{{ architect_jenkins_swarm_config_dir }}/architect.compose.yaml"
-architect_jenkins_swarm_inflwharf_secrets_file: "{{ architect_jenkins_swarm_config_dir }}/inflwharf_secrets"
-architect_jenkins_swarm_stack_name: architect-jenkins
-architect_jenkins_bsv_config_psd1: "{{ architect_jenkins_swarm_config_dir }}/bsv.config.psd1"
-architect_jenkins_backup_gpg_recipient_pubkey: "{{ architect_jenkins_swarm_config_dir }}/recipient.pubkey.gpg"
-architect_jenkins_bsv_aws_secrets_file: "{{ architect_jenkins_swarm_config_dir }}/bsv.aws.psd1"
-
-# This should probably not be changed in this file,
-# but overridden on the commandline with e.g. "-e remove_existing_architect_ci_stack=yes"
-remove_existing_architect_ci_stack: no
-skip_architect_ci_stack: no
-skip_architect_docker_install: no
-# This is set here for completeness, but see the deploy.yaml playbook
-skip_architect_initialize_swarm: no
-skip_architect_deploy_jenkins_swarm: no

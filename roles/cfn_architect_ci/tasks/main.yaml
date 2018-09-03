@@ -1,5 +1,22 @@
 ---
 
+- block:
+
+  - name: Save SSH client private key
+    copy:
+      content: "{{ architect_ssh_client_ecdsa_key_b64 | b64decode }}"
+      dest: "{{ client_ssh_private_key_path }}"
+
+  - name: Get SSH client public ECDSA key
+    command: ssh-keygen -y -f "{{ client_ssh_private_key_path }}"
+    register: ssh_client_public_ecdsa_key_result
+    changed_when: false
+
+  - name: Save SSH client public ECDSA key
+    copy:
+      content: "{{ ssh_client_public_ecdsa_key_result.stdout }}"
+      dest: "{{ client_ssh_public_key_path }}"
+
 - name: Destroy old Architect CI stack
   cloudformation:
     stack_name: "{{ architect_ci_stack_name }}"
@@ -46,13 +63,47 @@
 - set_fact:
     architect_ip_address: "{{ cloudformation[architect_ci_stack_name].stack_outputs.ArchitectIpAddress }}"
 
-- name: Retrieve SSH known_hosts_localhost
+# TODO: When we upgrade to Ansible 2.6, use the 'getstr' operation
+- name: Retrieve SSH known_hosts_architect_tmp
   aws_s3:
     bucket: "{{ deploy_bucket.name }}"
     mode: get
     overwrite: different
     object: "{{ architect_ci_stack_name }}/known_hosts_localhost"
-    dest: "{{ workdir }}/known_hosts_localhost"
+    dest: "{{ workdir }}/known_hosts_architect_tmp"
 
-- name: Save known_hosts file (replacing localhost with the IP address)
-  shell: sed 's/^localhost/{{ architect_ip_address }}/g' '{{ workdir }}/known_hosts_localhost' > '{{ workdir }}/known_hosts'
+- name: Replace localhost with Architect IP address in known_hosts_architect_tmp
+  replace:
+    path: "{{ workdir }}/known_hosts_architect_tmp"
+    regexp: "^localhost(.*)"
+    replace: '{{ architect_ip_address }}\1'
+
+- name: Ensure each line of known_hosts_architect_tmp exists in known_hosts_file
+  lineinfile:
+    path: "{{ known_hosts_file }}"
+    line: "{{ item }}"
+  with_lines: "cat {{ workdir }}/known_hosts_architect_tmp"
+
+- set_fact:
+    ssh_cmd: >-
+      ssh -t
+      -o UserKnownHostsFile={{ known_hosts_file }}
+      -i {{ playbook_dir }}/{{ client_ssh_private_key_path }}
+      {{ architect_user }}@{{ architect_ip_address }}
+
+- name: Write SSH connection script
+  copy:
+    content: |+
+      #!/bin/sh
+      set -eu
+      {{ ssh_cmd }} "$@"
+    dest: "{{ ssh_script_path }}"
+    mode: 0700
+
+- name: Success!
+  debug:
+    msg: |+
+      Connecting to Architect, for debugging
+      IP address              {{ architect_ip_address }}
+      SSH script              {{ ssh_script_path }}
+      SSH script usage        {{ ssh_script_path }} sudo docker stack ls

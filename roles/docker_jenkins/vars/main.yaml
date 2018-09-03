@@ -1,5 +1,13 @@
 ---
 
+architect_config_dir: /etc/architect
+architect_jenkins_swarm_config_dir: "{{ architect_config_dir }}/jenkins-swarm"
+architect_jenkins_swarm_compose_file: "{{ architect_jenkins_swarm_config_dir }}/architect.compose.yaml"
+architect_jenkins_swarm_inflwharf_secrets_file: "{{ architect_jenkins_swarm_config_dir }}/inflwharf_secrets"
+architect_jenkins_swarm_stack_name: architect-jenkins
+architect_jenkins_bsv_config_psd1: "{{ architect_jenkins_swarm_config_dir }}/bsv.config.psd1"
+architect_jenkins_backup_gpg_recipient_pubkey: "{{ architect_jenkins_swarm_config_dir }}/recipient.pubkey.gpg"
+architect_jenkins_bsv_aws_secrets_file: "{{ architect_jenkins_swarm_config_dir }}/bsv.aws.psd1"
 
 inflwharf_cert_check_cmd: >-
   docker exec
