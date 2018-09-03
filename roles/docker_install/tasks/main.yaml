@@ -47,6 +47,8 @@
 
   - name: Install Docker APT GPG key
     shell: curl -fsSL "https://download.docker.com/linux/{{ distro_id }}/gpg" | apt-key add -
+    args:
+      warn: no
 
   - name: Configure Docker APT repository
     apt_repository:

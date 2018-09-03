@@ -9,11 +9,12 @@
   - name: Get MD5 hash for recipient.pubkey.gpg
     stat:
       path: "{{ architect_jenkins_backup_gpg_recipient_pubkey }}"
+      checksum_algorithm: md5
     register: bsv_recipient_stat_result
 
   - name: Set bsv_recipient_hash
     set_fact:
-      bsv_recipient_hash: "{{ bsv_recipient_stat_result.stat.md5 }}"
+      bsv_recipient_hash: "{{ bsv_recipient_stat_result.stat.checksum }}"
 
   - name: Show bsv_recipient_hash
     debug:

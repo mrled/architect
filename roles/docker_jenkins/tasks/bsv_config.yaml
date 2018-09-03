@@ -9,11 +9,12 @@
   - name: Get MD5 hash for bsv.config.psd1
     stat:
       path: "{{ architect_jenkins_bsv_config_psd1 }}"
+      checksum_algorithm: md5
     register: bsv_config_stat_result
 
   - name: Set bsv_config_hash
     set_fact:
-      bsv_config_hash: "{{ bsv_config_stat_result.stat.md5 }}"
+      bsv_config_hash: "{{ bsv_config_stat_result.stat.checksum }}"
 
   - name: Show bsv_config_hash
     debug:

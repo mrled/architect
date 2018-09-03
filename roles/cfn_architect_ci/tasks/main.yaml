@@ -63,7 +63,6 @@
 - set_fact:
     architect_ip_address: "{{ cloudformation[architect_ci_stack_name].stack_outputs.ArchitectIpAddress }}"
 
-# TODO: When we upgrade to Ansible 2.6, use the 'getstr' operation
 - name: Retrieve SSH known_hosts_architect_tmp
   aws_s3:
     bucket: "{{ deploy_bucket.name }}"
