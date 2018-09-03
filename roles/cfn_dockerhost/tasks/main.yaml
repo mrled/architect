@@ -1,0 +1,114 @@
+---
+
+- block:
+
+  - name: Create working directory
+    file:
+      path: "{{ cfn_dockerhost_workdir }}"
+      state: directory
+      mode: 0700
+
+  - name: Save SSH client private key
+    copy:
+      content: "{{ cfn_dockerhost_ssh_client_key.priv_b64 | b64decode }}"
+      dest: "{{ cfn_dockerhost_ssh_client_key.priv_path }}"
+
+  - name: Get SSH client public ECDSA key
+    shell: ssh-keygen -y -f "{{ cfn_dockerhost_ssh_client_key.priv_path }}"
+    register: cfn_dockerhost_ssh_client_pub_key_result
+    changed_when: false
+
+  - name: Save SSH client public ECDSA key
+    copy:
+      content: "{{ cfn_dockerhost_ssh_client_pub_key_result.stdout }}"
+      dest: "{{ cfn_dockerhost_ssh_client_key.pub_path }}"
+
+- name: Destroy old CI stack
+  cloudformation:
+    stack_name: "{{ cfn_dockerhost_ci_stackname }}"
+    state: "absent"
+  when: cfn_dockerhost_remove_existing_stack | bool == true
+
+- block:
+
+  - name: Deploy the CI template
+    cloudformation:
+      aws_access_key: "{{ cfn_dockerhost_aws_cfg.access }}"
+      aws_secret_key: "{{ cfn_dockerhost_aws_cfg.secret }}"
+      stack_name: "{{ cfn_dockerhost_ci_stackname }}"
+      state: "present"
+      disable_rollback: true
+      region: "{{ cfn_dockerhost_aws_cfg.region }}"
+      template: "{{ role_path }}/files/dockerhost.cfn.yaml"
+      template_parameters:
+        AdminUserName: "{{ cfn_dockerhost_admin_user }}"
+        SshClientPublicKey: "{{ lookup('file', cfn_dockerhost_ssh_client_key.pub_path) }}"
+        DockerDataVolDevice: "{{ cfn_dockerhost_docker_volume_device }}"
+        DeployBucketName: "{{ cfn_dockerhost_deploy_bucket.name }}"
+        DeployBucketArn: "{{ cfn_dockerhost_deploy_bucket.arn }}"
+      tags:
+        Environment: "{{ cfn_dockerhost_ci_stackname }}"
+    register: cfn_dockerhost_stack_result
+    when: cfn_dockerhost_skip_stack | bool == false
+
+  rescue:
+  - debug: var=cfn_dockerhost_stack_result
+  - fail:
+      msg: Docker host deployment has failed :(
+
+- name: Read Docker host stack output
+  cloudformation_facts:
+    aws_access_key: "{{ cfn_dockerhost_aws_cfg.access }}"
+    aws_secret_key: "{{ cfn_dockerhost_aws_cfg.secret }}"
+    stack_name: "{{ cfn_dockerhost_ci_stackname }}"
+    region: "{{ cfn_dockerhost_aws_cfg.region }}"
+
+- debug:
+    var: cloudformation.{{ cfn_dockerhost_ci_stackname }}.stack_outputs
+
+- set_fact:
+    cfn_dockerhost_ip_address: "{{ cloudformation[cfn_dockerhost_ci_stackname].stack_outputs.DockerHostIpAddress }}"
+
+- name: Retrieve SSH cfn_dockerhost_known_hosts_tmp
+  aws_s3:
+    bucket: "{{ cfn_dockerhost_deploy_bucket.name }}"
+    mode: get
+    overwrite: different
+    object: "{{ cfn_dockerhost_ci_stackname }}/known_hosts_localhost"
+    dest: "{{ cfn_dockerhost_workdir }}/cfn_dockerhost_known_hosts_tmp"
+
+- name: Replace localhost with Docker host IP address in cfn_dockerhost_known_hosts_tmp
+  replace:
+    path: "{{ cfn_dockerhost_workdir }}/cfn_dockerhost_known_hosts_tmp"
+    regexp: "^localhost(.*)"
+    replace: '{{ cfn_dockerhost_ip_address }}\1'
+
+- name: Ensure each line of cfn_dockerhost_known_hosts_tmp exists in known_hosts_file
+  lineinfile:
+    path: "{{ cfn_dockerhost_known_hosts_file }}"
+    line: "{{ item }}"
+  with_lines: "cat {{ cfn_dockerhost_workdir }}/cfn_dockerhost_known_hosts_tmp"
+
+- set_fact:
+    cfn_dockerhost_ssh_cmd: >-
+      ssh -t
+      -o UserKnownHostsFile={{ cfn_dockerhost_known_hosts_file }}
+      -i {{ playbook_dir }}/{{ cfn_dockerhost_ssh_client_key.priv_path }}
+      {{ cfn_dockerhost_admin_user }}@{{ cfn_dockerhost_ip_address }}
+
+- name: Write SSH connection script
+  copy:
+    content: |+
+      #!/bin/sh
+      set -eu
+      {{ cfn_dockerhost_ssh_cmd }} "$@"
+    dest: "{{ cfn_docker_ssh_script_path }}"
+    mode: 0700
+
+- name: Success!
+  debug:
+    msg: |+
+      Connecting to the Docker host for debugging
+      IP address              {{ cfn_dockerhost_ip_address }}
+      SSH script              {{ cfn_docker_ssh_script_path }}
+      SSH script usage        {{ cfn_docker_ssh_script_path }} sudo docker stack ls

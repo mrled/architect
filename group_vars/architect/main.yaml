@@ -1,21 +1,61 @@
 ---
 
-# CloudFormation stack names
-architect_ci_stack_name: ArchitectCi
+##
+#### Architect group-wide vars
+## Prefix: architect_
+## Purpose: vars used directly in the architect playbook, or shared by multiple roles
+##
 
-# Name of the admin user on the Architect EC2 instance
-architect_user: architect
+# Docker data volume device name/mount point on the EC2 instance
+# Note that the EBS volume that results is _not_ deleted on termination
+architect_docker_volume:
+    device: xvdj
+    mountpoint: /var/lib/docker
 
-# Device name for the Jenkins data volume on the Architect EC2 instance
-# Will create an EBS volume that is _not_ deleted on termination with this device name
-architect_docker_volume_device: xvdj
+# Local path to save an SSH script
+# Only used to have an easy way to connect for manual debugging
+architect_ssh_script_path: "{{ all_workdir }}/ssh-architect.sh"
 
-# The mount point for the Jenkins data volume on the Architecft EC2 instance
-architect_docker_volume_mountpoint: /var/lib/docker
+# Admin user for the architect instance
+architect_admin_user: architect
 
-client_ssh_private_key_path: "{{ workdir }}/architect.pem"
-client_ssh_public_key_path: "{{ client_ssh_private_key_path }}.pub"
-ssh_script_path: "{{ workdir }}/ssh-architect.sh"
+# Generate SSH client key
+# Generate a client key that we can use to connect to the architect instance
+# We do this ahead of time so that its saved to the repo, encrypted in the vault
+# ssh-keygen -q -f ./architect.pem -N '' -t ecdsa && cat ./architect.pem | base64
+# (Note: public key can be generated from the private key, no need to save it here)
+architect_ssh_client_key:
+    priv_b64: "{{ vault_architect_ssh_client_ecdsa_key_b64 }}"
+    priv_path: "{{ all_workdir }}/architect.pem"
+    pub_path: "{{ all_workdir }}/architect.pem.pub"
+
+##
+#### cfn_dockerhost role vars
+## Prefix: cfn_dockerhost_
+##
+
+# CloudFormation stack name
+cfn_dockerhost_ci_stackname: ArchitectCi
+
+cfn_dockerhost_docker_volume_device: "{{ architect_docker_volume.device }}"
+cfn_dockerhost_workdir: "{{ all_workdir }}"
+cfn_dockerhost_known_hosts_file: "{{ all_known_hosts_file }}"
+cfn_docker_ssh_script_path: "{{ architect_ssh_script_path }}"
+cfn_dockerhost_ssh_client_key: "{{ architect_ssh_client_key }}"
+cfn_dockerhost_aws_cfg: "{{ all_aws_cfg }}"
+cfn_dockerhost_deploy_bucket: "{{ all_deploy_bucket }}"
+cfn_dockerhost_admin_user: "{{ architect_admin_user }}"
+
+##
+#### TODO: rename all remaining variables in file to have proper prefixing
+##
+
+architect_docker_volume_device: "{{ architect_docker_volume.device }}"
+architect_docker_volume_mountpoint: "{{ architect_docker_volume.mountpoint }}"
+ssh_script_path: "{{ architect_ssh_script_path }}"
+aws_access_key: "{{ all_aws_cfg.access }}"
+aws_secret_key: "{{ all_aws_cfg.secret }}"
+aws_region: "{{ all_aws_cfg.region }}"
 
 ##
 #### Values retrieved from the vault:
@@ -33,12 +73,6 @@ inflwharf_aws_secret_key: "{{ vault_inflwharf_aws_secret_key }}"
 # They should only allow uploading to the autobackup S3 bucket
 bsv_aws_access_key: "{{ vault_bsv_aws_access_key }}"
 bsv_aws_secret_key: "{{ vault_bsv_aws_secret_key }}"
-
-# Generate SSH client key
-# Generate a client key that we can use to connect to the architect instance
-# We do this ahead of time so that its saved to the repo, encrypted in the vault
-# ssh-keygen -q -f ./architect.pem -N '' -t ecdsa && cat ./architect.pem | base64
-architect_ssh_client_ecdsa_key_b64: "{{ vault_architect_ssh_client_ecdsa_key_b64 }}"
 
 # The VPN host - either an IP address or a domain name
 algo_vpn_host: newtroy.micahrl.com
@@ -93,7 +127,7 @@ algo_ipsec_conf: |+
         auto=start
 
 # A host to ping periodically to keep the VPN tunnel up
-# Can be anything that goes over the rightsubnet routes from roles/cfn_architect_ci/files/ipsec_architect.conf
+# Can be anything that goes over the rightsubnet routes in ipsec.conf
 vpn_keepalive_host: "architect.internal.micahrl.com"
 
 # The CA cert from Algo

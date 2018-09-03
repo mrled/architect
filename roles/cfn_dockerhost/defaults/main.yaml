@@ -1,0 +1,2 @@
+cfn_dockerhost_remove_existing_stack: no
+cfn_dockerhost_skip_stack: no

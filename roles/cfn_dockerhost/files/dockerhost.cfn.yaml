@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: 2010-09-09
-Description: Architect CI stack
+Description: Docker host CI stack
 
 Parameters:
   InstanceType:
@@ -7,7 +7,7 @@ Parameters:
     Type: String
     Default: t2.micro
     ConstraintDescription: must be a valid EC2 instance type.
-  ArchitectUserName:
+  AdminUserName:
     Description: The name of the admin user, who will have passwordless sudo rights
     Type: String
   SshClientPublicKey:
@@ -35,8 +35,8 @@ Parameters:
   VpcSubnetBlock:
     Default: 10.0.0.0/24
     Type: String
-  JenkinsDataVolumeDevice:
-    Description: The device name for the Jenkins data volume, such as "xvdj"
+  DockerDataVolDevice:
+    Description: The device name for the Docker data volume, such as "xvdj"
     Type: String
   DeployBucketName:
     Description: The bare bucket name for the bucket described in DeployBucketArn
@@ -187,13 +187,13 @@ Resources:
     DependsOn: AttachGateway
     Properties:
       Domain: vpc
-      InstanceId: !Ref ArchitectInstance
+      InstanceId: !Ref DockerHostInstance
 
-  ArchitectInstanceSecurityGroup:
+  DockerHostInstanceSecurityGroup:
     Type: 'AWS::EC2::SecurityGroup'
     Properties:
       VpcId: !Ref VPC
-      GroupDescription: Architect instance security group
+      GroupDescription: Docker host instance security group
       SecurityGroupIngress:
         - IpProtocol: tcp
           FromPort: '22'
@@ -236,7 +236,7 @@ Resources:
           ToPort: '22'
           CidrIp: 0.0.0.0/0
 
-  ArchitectInstanceIamRole:
+  DockerHostInstanceIamRole:
     Type: AWS::IAM::Role
     Properties:
       AssumeRolePolicyDocument:
@@ -249,7 +249,7 @@ Resources:
             Action:
               - sts:AssumeRole
       Policies:
-        - PolicyName: ArchitectInstanceS3BucketWithPrefixOptions
+        - PolicyName: DockerHostInstanceS3BucketWithPrefixOptions
           PolicyDocument:
             Version: 2012-10-17
             Statement:
@@ -261,14 +261,14 @@ Resources:
                   - s3:DeleteObject
                 Resource: !Sub "${DeployBucketArn}/${AWS::StackName}/*"
 
-  ArchitectInstanceIamProfile:
+  DockerHostInstanceIamProfile:
     Type: AWS::IAM::InstanceProfile
     Properties:
       Roles:
-        - !Ref ArchitectInstanceIamRole
-      InstanceProfileName: ArchitectInstanceIamProfile
+        - !Ref DockerHostInstanceIamRole
+      InstanceProfileName: !Sub "${AWS::StackName}-DockerHostInstanceIamProfile"
 
-  ArchitectInstance:
+  DockerHostInstance:
     Type: 'AWS::EC2::Instance'
     DependsOn: AttachGateway
     Metadata:
@@ -276,23 +276,23 @@ Resources:
 
         configSets:
           default:
-            - configArchitectUser
+            - configAdminUser
             # - configDebugging
             - configSwap
             - uploadSshKnownHosts
             - configDhcp
 
-        configArchitectUser:
+        configAdminUser:
           groups:
             basicallyroot: {}
           files:
-            /usr/local/bin/configure-architect-user.sh:
+            /usr/local/bin/configure-admin-user.sh:
               content:
                 !Sub |
                   #!/bin/sh
                   set -eu
                   umask 077
-                  usrname="${ArchitectUserName}"
+                  usrname="${AdminUserName}"
                   usrhome="/home/$usrname"
                   useradd --home-dir "$usrhome" --groups sudo,basicallyroot --create-home --shell /bin/bash --user-group "$usrname"
                   mkdir -p "$usrhome/.ssh"
@@ -307,8 +307,8 @@ Resources:
               owner: "root"
               group: "root"
           commands:
-            configure-architect-user:
-              command: /usr/local/bin/configure-architect-user.sh
+            configure-admin-user:
+              command: /usr/local/bin/configure-admin-user.sh
 
         configDebugging:
           packages:
@@ -383,15 +383,15 @@ Resources:
     Properties:
       ImageId: !Ref Ec2DebianStretchAmi
       InstanceType: !Ref InstanceType
-      IamInstanceProfile: ArchitectInstanceIamProfile
+      IamInstanceProfile: !Ref DockerHostInstanceIamProfile
       Tags:
         - Key: Application
           Value: !Ref 'AWS::StackId'
         - Key: Name
-          Value: Architect
+          Value: !Sub "${AWS::StackName}-DockerHost"
       NetworkInterfaces:
         - GroupSet:
-            - !Ref ArchitectInstanceSecurityGroup
+            - !Ref DockerHostInstanceSecurityGroup
           AssociatePublicIpAddress: 'true'
           DeviceIndex: '0'
           DeleteOnTermination: 'true'
@@ -431,36 +431,37 @@ Resources:
             apt-get -uy install python-setuptools
             easy_install https://s3.amazonaws.com/cloudformation-examples/aws-cfn-bootstrap-latest.tar.gz
             # Bootstrap CFN
-            cfn-init --verbose --stack "$stackname" --resource ArchitectInstance --region "$region"
-            cfn-signal --exit-code $? --stack "$stackname" --resource ArchitectInstance --region "$region"
+            cfn-init --verbose --stack "$stackname" --resource DockerHostInstance --region "$region"
+            cfn-signal --exit-code $? --stack "$stackname" --resource DockerHostInstance --region "$region"
 
     CreationPolicy:
       ResourceSignal:
         Timeout: PT15M
 
-  ArchitectJenkinsDataDisk:
+  DockerDataVolDisk:
     Type: AWS::EC2::Volume
     Properties:
       Size: 8
       AvailabilityZone: !GetAtt
-        - ArchitectInstance
+        - DockerHostInstance
         - AvailabilityZone
       VolumeType: gp2
-  ArchitectJenkinsDataDiskAttachment:
+  DockerDataVolDiskAttachment:
     Type: AWS::EC2::VolumeAttachment
     Properties:
-      InstanceId: !Ref ArchitectInstance
-      VolumeId: !Ref ArchitectJenkinsDataDisk
-      Device: !Ref JenkinsDataVolumeDevice
+      InstanceId: !Ref DockerHostInstance
+      VolumeId: !Ref DockerDataVolDisk
+      Device: !Ref DockerDataVolDevice
 
 Outputs:
-  ArchitectIpAddress:
+  DockerHostIpAddress:
     Value: !GetAtt
-      - ArchitectInstance
+      - DockerHostInstance
       - PublicIp
-    Description: Architect IP address
-  ArchitectInstanceId:
-    Value: !Ref ArchitectInstance
+    Description: Docker host IP address
+  DockerHostInstanceId:
+    Value: !Ref DockerHostInstance
+    Description: Docker host instance ID
 
 # Footnotes
 # [highload]:

@@ -1,25 +1,20 @@
 ---
 
 ##
-#### User-managed variables
+#### Variables that apply to all my infrastructure
+## Prefix: all_
 ##
 
-# Your AWS region
-aws_region: us-east-2
+all_aws_cfg:
+    access: "{{ vault_all_aws_access_key }}"
+    secret: "{{ vault_all_aws_secret_key }}"
+    region: us-east-2
 
 # The bucket we use during deployments for things like copying SSH host key signatures
-deploy_bucket:
+all_deploy_bucket:
     name: third-jersey-deployments
     arn: arn:aws:s3:::third-jersey-deployments
 
 # These values may be hardcoded elsewhere (e.g. ansible.cfg) and should not be changed
-workdir: workdir
-known_hosts_file: "{{ workdir }}/known_hosts"
-
-##
-#### Values retrieved from the vault:
-##
-
-# Credentials used by this Ansible playbook
-aws_access_key: "{{ vault_aws_access_key }}"
-aws_secret_key: "{{ vault_aws_secret_key }}"
+all_workdir: workdir
+all_known_hosts_file: "{{ all_workdir }}/known_hosts"
