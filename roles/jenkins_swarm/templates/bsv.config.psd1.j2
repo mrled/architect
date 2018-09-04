@@ -1,0 +1,7 @@
+@{
+    BackupPath = "/srv/backuproot"
+    BackupBaseName = "{{ jenkins_swarm_bsv_basename }}"
+    GpgRecipientId = "{{ jenkins_swarm_bsv_recipient.id }}"
+    S3BucketName = "{{ jenkins_swarm_bsv_s3_bucket }}"
+    NoCompress = $False
+}

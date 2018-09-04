@@ -1,0 +1,21 @@
+- block:
+  - name: Save bsv.config.psd1
+    template:
+      src: bsv.config.psd1.j2
+      dest: "{{ jenkins_swarm_files.bsv_config }}"
+      owner: root
+      mode: 0600
+
+  - name: Get MD5 hash for bsv.config.psd1
+    stat:
+      path: "{{ jenkins_swarm_files.bsv_config }}"
+      checksum_algorithm: md5
+    register: jenkins_swarm_bsv_config_stat_result
+
+  - name: Set jenkins_swarm_bsv_config_hash
+    set_fact:
+      jenkins_swarm_bsv_config_hash: "{{ jenkins_swarm_bsv_config_stat_result.stat.checksum }}"
+
+  - name: Show jenkins_swarm_bsv_config_hash
+    debug:
+      var: jenkins_swarm_bsv_config_hash

@@ -1,0 +1,21 @@
+- block:
+  - name: Save recipient.pubkey.gpg
+    copy:
+      content: "{{ jenkins_swarm_bsv_recipient.gpg_asc }}"
+      dest: "{{ jenkins_swarm_files.gpg_recipient_pubkey }}"
+      owner: root
+      mode: 0600
+
+  - name: Get MD5 hash for recipient.pubkey.gpg
+    stat:
+      path: "{{ jenkins_swarm_files.gpg_recipient_pubkey }}"
+      checksum_algorithm: md5
+    register: jenkins_swarm_bsv_recipient_stat_result
+
+  - name: Set jenkins_swarm_bsv_recipient_hash
+    set_fact:
+      jenkins_swarm_bsv_recipient_hash: "{{ jenkins_swarm_bsv_recipient_stat_result.stat.checksum }}"
+
+  - name: Show jenkins_swarm_bsv_recipient_hash
+    debug:
+      var: jenkins_swarm_bsv_recipient_hash

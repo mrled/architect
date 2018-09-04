@@ -32,15 +32,15 @@
   hosts: architect
   become: true
   roles:
-    - role: vpn_client
-    - role: docker_install
+    - role: algoclient
+    - role: dockerhost
 
 - name: Initialize the Docker Swarm
   import_playbook: playbooks/docker_swarm.yaml
-  when: skip_architect_initialize_swarm | default(false) | bool == false
+  when: docker_swarm_skip | default(false) | bool == false
 
 - name: Deploy Jenkins service to Docker Swarm
   hosts: architect
   become: true
   roles:
-    - role: docker_jenkins
+    - role: jenkins_swarm

@@ -2,12 +2,12 @@ version: "3.5"
 services:
 
   architect-jenkins:
-    image: mrled/architect-jenkins:{{ archjenks_version }}
+    image: mrled/architect-jenkins:{{ jenkins_swarm_archjenks_tag }}
     ports:
       - "80:8080"
       - "443:8443"
     environment:
-      - DOCKER_HOST_DOCKER_GID={{ docker_gid }}
+      - DOCKER_HOST_DOCKER_GID={{ jenkins_swarm_docker_gid }}
       - HEALTHCHECK_URL=https://localhost:8443
       - HEALTHCHECK_VERIFY_TLS=false
     volumes:
@@ -24,20 +24,20 @@ services:
     command: >
       --httpPort=-1
       --httpsPort=8443
-      --httpsCertificate="/var/jenkins_cert/certificates/{{ inflwharf_domain_name }}.crt"
-      --httpsPrivateKey="/var/jenkins_cert/certificates/{{ inflwharf_domain_name }}.key"
+      --httpsCertificate="/var/jenkins_cert/certificates/{{ jenkins_swarm_domain_name }}.crt"
+      --httpsPrivateKey="/var/jenkins_cert/certificates/{{ jenkins_swarm_domain_name }}.key"
 
   inflatable-wharf:
-    image: mrled/inflatable-wharf:{{ inflwharf_version }}
+    image: mrled/inflatable-wharf:{{ jenkins_swarm_inflwharf_tag }}
     deploy:
       replicas: 1
     environment:
-      - ACME_LETSENCRYPT_EMAIL={{ inflwharf_letsencrypt_email }}
-      - ACME_DOMAIN={{ inflwharf_domain_name }}
+      - ACME_LETSENCRYPT_EMAIL={{ jenkins_swarm_inflwharf_letsencrypt_email }}
+      - ACME_DOMAIN={{ jenkins_swarm_domain_name }}
       - ACME_DNS_AUTHENTICATOR=route53
-      - ACME_LETSENCRYPT_SERVER={{ inflwharf_lets_encrypt_server }}
-      - AWS_REGION={{ inflwharf_aws_region }}
-      - AWS_HOSTED_ZONE_ID={{ inflwharf_aws_hosted_zone_id }}
+      - ACME_LETSENCRYPT_SERVER={{ jenkins_swarm_inflwharf_lets_encrypt_server }}
+      - AWS_REGION={{ jenkins_swarm_inflwharf_aws_cfg.region }}
+      - AWS_HOSTED_ZONE_ID={{ jenkins_swarm_inflwharf_aws_hosted_zone_id }}
     secrets:
       - source: acme_secrets_env_file
         target: acme_secrets_env_file
@@ -48,11 +48,11 @@ services:
     command: --verbose --additional-env-file /run/secrets/acme_secrets_env_file
 
   bsv:
-    image: mrled/bsv:{{ bsv_version }}
+    image: mrled/bsv:{{ jenkins_swarm_bsv_tag }}
     deploy:
       replicas: 1
     environment:
-      - BACKUP_SCHEDULE="{{ bsv_backup_schedule }}"
+      - BACKUP_SCHEDULE="{{ jenkins_swarm_bsv_backup_schedule }}"
     secrets:
       - source: bsv_aws_secrets_psd1
         target: aws.psd1
@@ -81,16 +81,16 @@ volumes:
 
 configs:
   bsv_config_psd1:
-    file: "{{ architect_jenkins_bsv_config_psd1 }}"
+    file: "{{ jenkins_swarm_files.bsv_config }}"
     name: bsv_config_psd1_${BSV_CONFIG_PSD1_HASH}
   bsv_gpg_recipient:
-    file: "{{ architect_jenkins_backup_gpg_recipient_pubkey }}"
+    file: "{{ jenkins_swarm_files.gpg_recipient_pubkey }}"
     name: bsv_gpg_recipient_pubkey_${BSV_GPG_RECIPIENT_PUBKEY_HASH}
 
 secrets:
   bsv_aws_secrets_psd1:
-    file: "{{ architect_jenkins_bsv_aws_secrets_file }}"
+    file: "{{ jenkins_swarm_files.bsv_aws_secrets }}"
     name: bsv_secrets_${BSV_AWS_SECRETS_FILE_HASH}
   acme_secrets_env_file:
-    file: "{{ architect_jenkins_swarm_inflwharf_secrets_file }}"
+    file: "{{ jenkins_swarm_files.inflwharf_secrets }}"
     name: acme_secrets_env_file_${ACME_SECRETS_ENV_FILE_HASH}

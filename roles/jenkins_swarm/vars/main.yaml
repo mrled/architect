@@ -1,0 +1,21 @@
+---
+
+jenkins_swarm_stackname: architect-jenkins
+jenkins_swarm_confdir: /etc/architect/jenkins_swarm
+jenkins_swarm_files:
+    compose: "{{ jenkins_swarm_confdir }}/jenkins.swarm.yaml"
+    inflwharf_secrets: "{{ jenkins_swarm_confdir }}/inflwharf_secrets"
+    bsv_config: "{{ jenkins_swarm_confdir }}/bsv.config.psd1"
+    gpg_recipient_pubkey: "{{ jenkins_swarm_confdir }}/recipient.pubkey.gpg"
+    bsv_aws_secrets: "{{ jenkins_swarm_confdir }}/bsv.aws.psd"
+
+jenkins_swarm_inflwh_cert_check_cmd: >-
+  docker exec
+  {{ jenkins_swarm_inflwharf_container_result.stdout }}
+  ls '/srv/inflatable-wharf/certificates'
+
+jenkins_swarm_archjenks_healthcheck_cmd: >-
+  docker ps
+  --filter health=healthy
+  --filter name='{{ jenkins_swarm_stackname }}_architect-jenkins'
+

@@ -47,43 +47,27 @@ cfn_dockerhost_deploy_bucket: "{{ all_deploy_bucket }}"
 cfn_dockerhost_admin_user: "{{ architect_admin_user }}"
 
 ##
-#### TODO: rename all remaining variables in file to have proper prefixing
+#### dockerhost role vars
+## Prefix: dockerhost_
 ##
 
-architect_docker_volume_device: "{{ architect_docker_volume.device }}"
-architect_docker_volume_mountpoint: "{{ architect_docker_volume.mountpoint }}"
-ssh_script_path: "{{ architect_ssh_script_path }}"
-aws_access_key: "{{ all_aws_cfg.access }}"
-aws_secret_key: "{{ all_aws_cfg.secret }}"
-aws_region: "{{ all_aws_cfg.region }}"
+dockerhost_docker_volume: "{{ architect_docker_volume }}"
 
 ##
-#### Values retrieved from the vault:
+#### algoclient role vars
+## Prefix: algoclient_
 ##
-
-# inflatable-wharf access and secret key
-# These credentials are separate from the deployment credentials (above)
-# because these are permanently saved to your EC2 instance
-# and therefore should have restricted settings to update your zone
-inflwharf_aws_access_key: "{{ vault_inflwharf_aws_access_key }}"
-inflwharf_aws_secret_key: "{{ vault_inflwharf_aws_secret_key }}"
-
-# bsv access and secret key
-# These credentials are separate from the deployment credentials
-# They should only allow uploading to the autobackup S3 bucket
-bsv_aws_access_key: "{{ vault_bsv_aws_access_key }}"
-bsv_aws_secret_key: "{{ vault_bsv_aws_secret_key }}"
 
 # The VPN host - either an IP address or a domain name
-algo_vpn_host: newtroy.micahrl.com
+algoclient_vpn_host: newtroy.micahrl.com
 
 # The parameterized contents of Algo's 'ipsec_USER.secrets' file:
-algo_ipsec_secrets: "{{ algo_vpn_host }} : ECDSA architect.key"
+algoclient_ipsec_secrets: "{{ algoclient_vpn_host }} : ECDSA architect.key"
 
 # The contents of Algo's ipsec_USER.conf file
 # We parameterize this where we can, and make a couple of changes, documented in the comments
-algo_ipsec_conf: |+
-    conn ikev2-{{ algo_vpn_host }}
+algoclient_ipsec_conf: |+
+    conn ikev2-{{ algoclient_vpn_host }}
         fragmentation=yes
         rekey=no
         keyexchange=ikev2
@@ -93,8 +77,8 @@ algo_ipsec_conf: |+
         ike=aes128gcm16-prfsha512-ecp256,aes128-sha2_512-prfsha512-ecp256,aes128-sha2_384-prfsha384-ecp256!
         esp=aes128gcm16-ecp256,aes128-sha2_512-prfsha512-ecp256!
 
-        right={{ algo_vpn_host }}
-        rightid={{ algo_vpn_host }}
+        right={{ algoclient_vpn_host }}
+        rightid={{ algoclient_vpn_host }}
         rightauth=pubkey
 
         # Change from Algo-generated version: allow any IP address
@@ -126,12 +110,8 @@ algo_ipsec_conf: |+
         # TODO: I think this means we can get rid of our VPN keepalive pings?
         auto=start
 
-# A host to ping periodically to keep the VPN tunnel up
-# Can be anything that goes over the rightsubnet routes in ipsec.conf
-vpn_keepalive_host: "architect.internal.micahrl.com"
-
 # The CA cert from Algo
-algo_cacert: |
+algoclient_cacert: |
     -----BEGIN CERTIFICATE-----
     MIIBwjCCAWegAwIBAgIJAIrq5lHj1GWaMAoGCCqGSM49BAMCMB4xHDAaBgNVBAMM
     E25ld3Ryb3kubWljYWhybC5jb20wHhcNMTgwNTA1MTk1OTE2WhcNMjgwNTAyMTk1
@@ -148,32 +128,47 @@ algo_cacert: |
 # Get the user's VPN cert and private key, generated from Algo
 # openssl pkcs12 -in "architect.p12" -clcerts -nokeys -passin pass:$ALGO_GENERATED_PKCS12PASS 2>/dev/null
 # openssl pkcs12 -in "architect.p12" -nocerts -passin pass:$ALGO_GENERATED_PKCS12PASS -nodes 2>/dev/null
-algo_vpn_cert: "{{ vault_algo_vpn_cert }}"
-algo_vpn_key: "{{ vault_algo_vpn_key }}"
+algoclient_vpn_cert: "{{ vault_algo_vpn_cert }}"
+algoclient_vpn_key: "{{ vault_algo_vpn_key }}"
 
+# A host to ping periodically to keep the VPN tunnel up
+# Can be anything that goes over the rightsubnet routes in ipsec.conf
+algoclient_vpn_keepalive_host: "architect.internal.micahrl.com"
+
+##
+#### jenkins_swarm role vars
+## Prefix: jenkins_swarm_
+##
+
+# The domain name to use for the Jenkins server
+jenkins_swarm_domain_name: architect.internal.micahrl.com
+
+jenkins_swarm_ssh_script_path: "{{ architect_ssh_script_path }}"
+
+# architect-jenkins container settings
+#
 # The version of the architect-jenkins Docker image to use
 # https://hub.docker.com/r/mrled/architect-jenkins/
-archjenks_version: v0.0.8
+jenkins_swarm_archjenks_tag: v0.0.8
 
-# The version of the inflatable-wharf Docker image to use
-# https://hub.docker.com/r/mrled/inflatable-wharf/
-inflwharf_version: v0.0.6
-
-# The version of bsv-docker to use
-# https://hub.docker.com/r/mrled/bsv/
-bsv_version: v0.0.2
-
-# inflatable-wharf settings
+# inflatable-wharf container settings
 # Used to do DNS challenges for Let's Encrypt
 #
+# The version of the inflatable-wharf Docker image to use
+# https://hub.docker.com/r/mrled/inflatable-wharf/
+jenkins_swarm_inflwharf_tag: v0.0.6
+# AWS creds
+# These credentials are separate from the deployment credentials (above)
+# because these are permanently saved to your EC2 instance
+# and therefore should have restricted settings to update your zone
+jenkins_swarm_inflwharf_aws_cfg:
+    access: "{{ vault_inflwharf_aws_access_key }}"
+    secret: "{{ vault_inflwharf_aws_secret_key }}"
+    region: "{{ all_aws_cfg.region }}"
 # The ID of the hosted zone
-inflwharf_aws_hosted_zone_id: Z2OOB3F1JEVLME
-# The region for the hosted zone (probably the same as your normal zone)
-inflwharf_aws_region: "{{ aws_region }}"
-# The domain name inflatable-wharf will request a cert for
-inflwharf_domain_name: architect.internal.micahrl.com
+jenkins_swarm_inflwharf_aws_hosted_zone_id: Z2OOB3F1JEVLME
 # The email address we send to Let's Encrypt via inflatable-wharf
-inflwharf_letsencrypt_email: psyops+architect@micahrl.com
+jenkins_swarm_inflwharf_letsencrypt_email: psyops+architect@micahrl.com
 # The Let's Encrypt server to use for generating the Architect TLS cert
 # Use "staging" at first, to make sure everything works.
 # This will prevent you from running into Let's Encrypt throttling,
@@ -181,68 +176,77 @@ inflwharf_letsencrypt_email: psyops+architect@micahrl.com
 # but it will not generate certificates that are valid in browsers.
 # Use "production" once everything works in staging;
 # this is subject to harsh throttling, but will produce valid certs.
-inflwharf_lets_encrypt_server: production
+jenkins_swarm_inflwharf_lets_encrypt_server: production
 
-# bsv settings
+# bsv container settings
 # Used to back up to S3
 #
+# The version of bsv-docker to use
+# https://hub.docker.com/r/mrled/bsv/
+jenkins_swarm_bsv_tag: v0.0.2
 # Backup schedule (cron format)
-bsv_backup_schedule: "0 2 * * *"
+jenkins_swarm_bsv_backup_schedule: "0 2 * * *"
 # Basename for the backup
-bsv_backup_basename: archjenks
-# GPG key of the backup encryption recipient
-bsv_recipient_gpg_asc: |
-    -----BEGIN PGP PUBLIC KEY BLOCK-----
-    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
-    =7U8T
-    -----END PGP PUBLIC KEY BLOCK-----
-# GPG key ID for the backup encryption recipient
-bsv_recipient_id: 699A6782
+jenkins_swarm_bsv_basename: archjenks
+# GPG ID and public key of the backup encryption recipient
+jenkins_swarm_bsv_recipient:
+    id: 699A6782
+    gpg_asc: |
+        -----BEGIN PGP PUBLIC KEY BLOCK-----
+        mQINBFZnWkwBEADIhNJ98iIja1drFiR9pyGFdeQ4Wdp0gi5PiW5DVwnLdj8iwJMw
+        P9nktGYbnT/NyEt06LkhgXN1XY6ibAeNYf7ACvjxsetyincPRX32SUrBtkVX/V7v
+        yT8Xnfj5bUoJASQZHEorvjb6TT+EcxmPO34R/heqa2hVcxmYLkXN1rHxMqTQ7FGU
+        qDJIugjsWkNdRICpRlsw/1AZT9al05EXzc6jTBBugv10Z0wFt4ZroUmif2ymvAcu
+        lhsLQEXVBKmqGPRwkn4CR2sW70Ee9YSah6mothY3FiWys3qvccdBQzzC0UisRgWI
+        amx06btQbFB7OVjGdLeSKHzWepDzoK7QfwYVO8TsXXK0yq52h6xfqpMO7IeTBIUi
+        HvDkIOVGgGpC668BhR4i602pVmZ8jePDMlck2Vv5L/DmjkXkDG7s7iVoblVCMqzc
+        h7egc43JTGTCW0wf5dtsKB9XDdPJett5uHX2Dv0bPsr1y377/PNrdbRdj0avg4tT
+        OTAAmf1mdBntmx5Gh19QSkfOhbJvy2AGdRq+G7Y/LIesO7zaG6w5wn86BzAHYvlk
+        vMTMzKBmWq4waAwNCeCxa9iHaqkjArjiR9vWrP/tf9+tKlU/AHrv7FENu7+S2UEk
+        Wkj84ZZ0GnXGb+IOB7M4sifUcSFUqjTW7WX2/4WLAlRwHDVYkyxOjYNYjQARAQAB
+        tENNaWNhaCBSIExlZGJldHRlciAoQXV0b21hdGljIEJhY2t1cCBFbmNyeXB0aW9u
+        KSA8bWljYWhAbWljYWhybC5jb20+iQI5BBMBCAAjBQJWZ1pMAhsDBwsJCAcDAgEG
+        FQgCCQoLBBYCAwECHgECF4AACgkQeU9ndGmaZ4L8Dg/8CFMOtOygfiC5WQGzUjqb
+        m6pHZ1iZWPBNuFP2uyPoKrzH51BQ6a0v80O2sOqBT5sdK0/VgcWytSxoL3+j86n+
+        Rfnjyes2ueyT1Joeo4rbpWUQsSg7+6nV7rPa851bNU9AM5SyjR/JfxhW5u0UEw4m
+        a6smwleEXH5Pcf1bFsHeWKLYmxel4xsmpmu/A+3QX2DF9YaHGTJqymgTmaTrbjxt
+        lePLoVCASNnmRObBI01QfbymiFwSFw9TM7naxIiR6dS9OFK95WEkR8xN2Dd1imxY
+        /EyTI3Wmo4YIo8QD7XLAOUP4C8P1IXknm2DVspcyVq0j3/rzi++hbeHpjDqQTRj3
+        kParpu//mCiyIylLSHdGCjlx6oLqLxbfkr2oT9JxKjcoOx4Ly/K4g7V1BZyBN5Wz
+        tsYDH1N9dSx1LGUlgqDuvXbUPMpq+HRUgaR2+YYnLi7npwWfvZK8gg5w4KuUTGL6
+        DAw/fPXpWWZPIraMxrpOpkSDx25wA68glFGhgTWwl1jyJQUgZuJ1Cd0S1qZC5FDg
+        xMaBQuyqATACqkzSZJyaPhjySnZwfiEs0DM8lWcP1ktXo+Y95Y5lG5aESvhJnIFp
+        v7+61BhBAoLBm6ZDhsf5QsgOjclx5MqTD8sS0JqUGRDx3eCQslJYzOZqJPVy4yLq
+        CvimtHKUvimKxtziU6On5n65Ag0EVmdaTAEQAOrvn4XISliloWMbk+tOUZCbJsnP
+        dLYXhGr1yxgNyhKM9LNRCm8/g1rV03tURrw27fMwzW0/fv+KXz42F8jP8gChmNxV
+        2eJMTp5apzYEL7+AxWSyEhLN232nknhE3pc3XL7sEHqqABaPCdeK7DdgLOsBv4U2
+        hO43r3yTM8estpmJttebn8dOfz3KbFNMdbp9jZc5FvI0PfdnEo56ytAzscL2cElz
+        +5FFPimJhVBq3ELJWSnb/I44vlTnrDaKpYqMgU780eDqjO2E134pg6g4nqH4yocN
+        XOI6zgdhsQp0I8I2Ie4oj0RpRyLUtpa2WGYgrwhzc99MkbvsvzlZZMeTOlD4bjTP
+        KBm4xNCVvwinVazB7fgi+H1+JhB/8ROzLvmie8m358rOm16BHbEWagKyMXyZUivw
+        nXRgKL2Vn3ajvagowae7W3BGGzf8gQWUV6GtuYUt/WT1RWLxtQ3a0r07tjgukAx0
+        8zRtOmSE7/JucnCixcf5BnEMgolXnmUvAPBWv6PXXn8uVtRn8ZRi/UV+cbXRCtIS
+        wPK+G/wGkCYLhhMtZ370g7iZp3r7/g/wkK65P6ccgSqQ5szrUghKqyJZwXPQk0L8
+        HB8hoEehoLz8MqvelHae/ue1M32v84COPb/410uUFVOUH/faG5LPYDhS35E2dz/3
+        inszL+8GnAB+8I2VABEBAAGJAh8EGAEIAAkFAlZnWkwCGwwACgkQeU9ndGmaZ4LL
+        lw/7B9GHi5a6mbORy2W40PAZp/Cu4yy6wqDKvvZKrOyGiFEd72wfcJ4nmEDG6uTx
+        JzRXQKSvq0HvIZk8OOhhW+zKhSHHjlMhepRzkhVrA1RICyJyPGPfroCqDOMeHKEz
+        Xr2IjL6HUXx96Tifw0/M4zpTy5Lbh5R9OgeP+A3ClFVdoKXBqNAlVvceZJV9iTbb
+        dd/AEPBzVRpCKJNltFU0EpqGaTSwhFE81U/kBkDTj4sT5owC9U++P2DzqBcwXXEe
+        usGQ4M4w1s4oUTuUdTwLKucR+zU4BoVKLIaQpDdIO2IZGuU/9Af+zIDaE5LyCR7t
+        Uq1N8KJk5uYwjtqVdPS96tRVXT7VwyIlPVmRKL8ck5AEkHMJtH2bBtw71OQ92Ds4
+        nyEDP8gj127d+oziSfa/0Ww1MPzN8do4nXYvl35KUzvC0zD08sdjLnetfqAMMQtP
+        sbiwtxtRoC59kUOJwtyjDpQDjzmJ7TtCdzoUXm+43q0pVFvdtE4r8uGcilmxPpas
+        h3yg78S09shuMrvc9QO23Zpv3LQyqwZsH6qyPCTXp4a52oXbpakqx/Zq0KZw3Ab2
+        ygVLkx/7kiliE5r9Ab/avjyjl0RT39KkpNY5xmntZo/+Pm5m+KeEr25g+fVPm+T9
+        cl8IMHeXkx5daztfAmzT2VEKPuGWKkpsCALDVBZI8l/4gE8=
+        =7U8T
+        -----END PGP PUBLIC KEY BLOCK-----
 # S3 bucket to upload encrypted backup to
-bsv_s3_bucket: backups-autobackup-89d9f33ec6b04b22b358c1fca9844264c063ae6b
+jenkins_swarm_bsv_s3_bucket: backups-autobackup-89d9f33ec6b04b22b358c1fca9844264c063ae6b
+# bsv access and secret key
+# These credentials are separate from the deployment credentials
+# They should only allow uploading to the autobackup S3 bucket
+jenkins_swarm_bsv_aws_cfg:
+    access: "{{ vault_bsv_aws_access_key }}"
+    secret: "{{ vault_bsv_aws_secret_key }}"

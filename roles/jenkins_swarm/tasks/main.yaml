@@ -9,15 +9,15 @@
 
   - name: Set docker_gid
     set_fact:
-      docker_gid: "{{ getent_group.docker[1] }}"
+      jenkins_swarm_docker_gid: "{{ getent_group.docker[1] }}"
 
-  - name: Show docker_gid
+  - name: Show jenkins_swarm_docker_gid
     debug:
-      msg: "docker GID: {{ docker_gid }}"
+      msg: "docker GID: {{ jenkins_swarm_docker_gid }}"
 
   - name: Create docker_jenkins configuration directory
     file:
-      path: "{{ architect_jenkins_swarm_config_dir }}"
+      path: "{{ jenkins_swarm_confdir }}"
       state: directory
       owner: root
       group: root
@@ -35,21 +35,21 @@
   - name: Save the Docker compose file
     template:
       src: jenkins.compose.yaml.j2
-      dest: "{{ architect_jenkins_swarm_compose_file }}"
+      dest: "{{ jenkins_swarm_files.compose }}"
       owner: root
       mode: 0600
 
   - name: Deploy the Docker stack
     command: >
       docker stack deploy
-      --compose-file {{ architect_jenkins_swarm_compose_file }}
+      --compose-file {{ jenkins_swarm_files.compose }}
       --prune
-      {{ architect_jenkins_swarm_stack_name }}
+      {{ jenkins_swarm_stackname }}
     environment:
-      ACME_SECRETS_ENV_FILE_HASH: "{{ inflwharf_secrets_hash }}"
-      BSV_CONFIG_PSD1_HASH: "{{ bsv_config_hash }}"
-      BSV_GPG_RECIPIENT_PUBKEY_HASH: "{{ bsv_recipient_hash }}"
-      BSV_AWS_SECRETS_FILE_HASH: "{{ bsv_aws_secrets_hash }}"
+      ACME_SECRETS_ENV_FILE_HASH: "{{ jenkins_swarm_inflwharf_secrets_hash }}"
+      BSV_CONFIG_PSD1_HASH: "{{ jenkins_swarm_bsv_config_hash }}"
+      BSV_GPG_RECIPIENT_PUBKEY_HASH: "{{ jenkins_swarm_bsv_recipient_hash }}"
+      BSV_AWS_SECRETS_FILE_HASH: "{{ jenkins_swarm_bsv_aws_secrets_hash }}"
     register: docker_stack_deploy_result
 
   - name: Show 'docker stack deploy' output
@@ -59,14 +59,14 @@
     command: >
       docker ps
       --quiet
-      --filter "name={{ architect_jenkins_swarm_stack_name }}_inflatable-wharf.*"
-    register: inflwharf_container_result
-    until: inflwharf_container_result.stdout != ""
+      --filter "name={{ jenkins_swarm_stackname }}_inflatable-wharf.*"
+    register: jenkins_swarm_inflwharf_container_result
+    until: jenkins_swarm_inflwharf_container_result.stdout != ""
     delay: 5    # Wait 5 seconds between each attempt
     retries: 3  # Retry 3 times, waiting for a max wait time of 15 seconds
 
   - name: Show the container result
-    debug: var=inflwharf_container_result
+    debug: var=jenkins_swarm_inflwharf_container_result
 
   - name: Print successful deployment message
     debug:
@@ -93,7 +93,7 @@
         file, and deployed again, but your container configuration doesn't seem
         to have changed. This is a bug(?) in Docker. Restart it like so
 
-            {{ ssh_script_path }} sudo docker service update --force {{ architect_jenkins_swarm_stack_name }}_architect-jenkins
+            {{ jenkins_swarm_ssh_script_path }} sudo docker service update --force {{ jenkins_swarm_stackname }}_architect-jenkins
 
   - name: Print inflatable-wharf loop message
     debug:
@@ -105,17 +105,17 @@
         If we time out (or you get bored),
         cancel this and check for yourself whether the cert exists with
 
-            {{ ssh_script_path }} sudo {{ inflwharf_cert_check_cmd }}
+            {{ jenkins_swarm_ssh_script_path }} sudo {{ jenkins_swarm_inflwh_cert_check_cmd }}
 
-        and check whether the '{{ inflwharf_domain_name }}.crt' file exists
+        and check whether the '{{ jenkins_swarm_domain_name }}.crt' file exists
 
   - name: Loop, checking for signed certs from Let's Encrypt
-    shell: "{{ inflwharf_cert_check_cmd }} 2>/dev/null"
-    register: inflwharf_cert_result
+    shell: "{{ jenkins_swarm_inflwh_cert_check_cmd }} 2>/dev/null"
+    register: jenkins_swarm_inflwharf_cert_result
     # Note that ls errors are printed to stderr,
     # so even if an error message contains the filename we're looking for,
     # the loop will still properly fail.
-    until: inflwharf_cert_result.stdout.find(inflwharf_domain_name) != -1
+    until: jenkins_swarm_inflwharf_cert_result.stdout.find(jenkins_swarm_domain_name) != -1
     delay: 30    # Wait 30 seconds between each attempt
     retries: 60  # Retry 60 times, waiting for a max wait time of 30 minutes
 
@@ -123,7 +123,7 @@
     debug:
       msg: |
         Certificates exist! ls result
-        {{ inflwharf_cert_result.stdout }}
+        {{ jenkins_swarm_inflwharf_cert_result.stdout }}
 
   - name: Print architect-jenkins loop message
     debug:
@@ -134,35 +134,35 @@
 
         If this times out, you can check for a healthy Jenkins container using
 
-            {{ ssh_script_path }} sudo {{ archjenkins_healthcheck_cmd }}
+            {{ jenkins_swarm_ssh_script_path }} sudo {{ jenkins_swarm_archjenks_healthcheck_cmd }}
 
         and check that the architect-jenkins container is started and healthy.
 
   - name: Loop, waiting for healthy Jenkins container
-    shell: "{{ archjenkins_healthcheck_cmd }} --quiet"
-    register: archjenks_health_result
-    until: archjenks_health_result.stdout | length == 12
+    shell: "{{ jenkins_swarm_archjenks_healthcheck_cmd }} --quiet"
+    register: jenkins_swarm_archjenks_health_result
+    until: jenkins_swarm_archjenks_health_result.stdout | length == 12
     delay: 15    # Wait 15 seconds between each attempt
     retries: 8   # Retry 8 times, waiting for a max wait time of 2 minutes
 
   - name: Set container ID facts
     set_fact:
-      archjenks_container_id: "{{ archjenks_health_result.stdout }}"
-      inflwharf_container_id: "{{ inflwharf_container_result.stdout }}"
+      jenkins_swarm_archjenks_container_id: "{{ jenkins_swarm_archjenks_health_result.stdout }}"
+      jenkins_swarm_inflwharf_container_id: "{{ jenkins_swarm_inflwharf_container_result.stdout }}"
 
   - name: Print architect-jenkins successful loop message
     debug:
       msg: |+
-        The Jenkins container is healthy! Container ID = '{{ archjenks_container_id }}'
+        The Jenkins container is healthy! Container ID = '{{ jenkins_swarm_archjenks_container_id }}'
 
         If you haven't logged in to this Jenkins server yet, your first login must be with the initial admin password.
         To see this password, run
 
-            {{ ssh_script_path }} sudo docker exec {{ archjenks_container_id }} cat /var/jenkins_home/secrets/initialAdminPassword
+            {{ jenkins_swarm_ssh_script_path }} sudo docker exec {{ jenkins_swarm_archjenks_container_id }} cat /var/jenkins_home/secrets/initialAdminPassword
 
         We generated a cert for this domain, so ensure DNS and networking allows Architect to be reached at
 
-            https://{{ inflwharf_domain_name }}/
+            https://{{ jenkins_swarm_domain_name }}/
 
         If you need to force a certificate renewal before inflatable-wharf detects that you need one -
         perhaps because you were using the staging Let's Encrypt server and now want to switch to production -
@@ -170,26 +170,26 @@
 
         To restart the inflatable-wharf container
 
-            {{ ssh_script_path }} sudo docker restart {{ inflwharf_container_id }}
+            {{ jenkins_swarm_ssh_script_path }} sudo docker restart {{ jenkins_swarm_inflwharf_container_id }}
 
         This will generate a new container ID for the inflatable-wharf container; get that ID with
 
-            {{ ssh_script_path }} sudo docker ps --quiet --filter "name={{ architect_jenkins_swarm_stack_name }}_inflatable-wharf.*"
+            {{ jenkins_swarm_ssh_script_path }} sudo docker ps --quiet --filter "name={{ jenkins_swarm_stackname }}_inflatable-wharf.*"
 
         To delete the certificate
 
-            {{ ssh_script_path }} sudo docker exec <NEW CONTAINER ID> rm /srv/inflatable-wharf/certificates/{{ inflwharf_domain_name }}.crt
+            {{ jenkins_swarm_ssh_script_path }} sudo docker exec <NEW CONTAINER ID> rm /srv/inflatable-wharf/certificates/{{ jenkins_swarm_domain_name }}.crt
 
         You can view certificate details with
 
-            {{ ssh_script_path }} sudo docker exec <NEW CONTAINER ID> openssl x509 -in /srv/inflatable-wharf/certificates/{{ inflwharf_domain_name }}.crt -noout -text
+            {{ jenkins_swarm_ssh_script_path }} sudo docker exec <NEW CONTAINER ID> openssl x509 -in /srv/inflatable-wharf/certificates/{{ jenkins_swarm_domain_name }}.crt -noout -text
 
         Then check the logs to know when the cert gets generated
 
-            {{ ssh_script_path }} sudo docker logs <NEW CONTAINER ID>
+            {{ jenkins_swarm_ssh_script_path }} sudo docker logs <NEW CONTAINER ID>
 
         And finally restart the Jenkins container (this will generate a NEW container ID!)
 
-            {{ ssh_script_path }} sudo docker restart <NEW CONTAINER ID>
+            {{ jenkins_swarm_ssh_script_path }} sudo docker restart <NEW CONTAINER ID>
 
-  when: skip_architect_deploy_jenkins_swarm | bool == false
+  when: jenkins_swarm_skip | bool == false
