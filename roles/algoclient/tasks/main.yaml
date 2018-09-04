@@ -2,11 +2,10 @@
 
 - name: Install VPN software
   apt:
-    name: "{{ item }}"
+    name:
+    - strongswan-charon
+    - strongswan-pki
     update_cache: yes
-  with_items:
-  - strongswan-charon
-  - strongswan-pki
 
 - name: Copy the VPN configuration files
   copy:

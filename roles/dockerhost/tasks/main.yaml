@@ -18,22 +18,18 @@
       src: "/dev/{{ dockerhost_docker_volume.device }}"
       state: mounted
 
-  - name: Update APT
-    apt:
-      update_cache: yes
-
   - name: Install APT prereqs for Docker repository
     apt:
       install_recommends: yes
-      name: "{{ item }}"
-      state: latest
-    with_items:
+      name:
       - apt-transport-https
       - ca-certificates
       - curl
       - gnupg2
       - openssl
       - software-properties-common
+      state: latest
+      update_cache: yes
 
   - name: Get distro release ID
     shell: . /etc/os-release; echo "$ID"
