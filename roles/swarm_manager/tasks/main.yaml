@@ -1,0 +1,22 @@
+---
+
+- block:
+
+  - name: Install APT prereqs for Docker repository
+    apt:
+      name:
+      - python3-pip
+      state: latest
+      update_cache: yes
+
+  - name: Install required packages
+    pip:
+      name: docker
+      version: 3.5.0
+
+  - name: Init a new swarm with default parameters
+    docker_swarm:
+      state: present
+      advertise_addr: "{{ swarm_manager_advertise_addr }}"
+
+  when: swarm_manager_skip | bool == false

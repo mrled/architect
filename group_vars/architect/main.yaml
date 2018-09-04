@@ -54,6 +54,13 @@ cfn_dockerhost_admin_user: "{{ architect_admin_user }}"
 dockerhost_docker_volume: "{{ architect_docker_volume }}"
 
 ##
+#### swarm_manager role vars
+## Prefix: swarm_manager_
+##
+
+swarm_manager_advertise_addr: 127.0.0.1
+
+##
 #### algoclient role vars
 ## Prefix: algoclient_
 ##
