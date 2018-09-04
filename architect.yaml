@@ -23,7 +23,7 @@
         name: "{{ cfn_dockerhost_ip_address }}"
         groups: architect,swarm_manager
         ansible_ssh_user: "{{ architect_admin_user }}"
-        ansible_python_interpreter: "/usr/bin/python2.7"
+        ansible_python_interpreter: "/usr/bin/python3"
         ansible_ssh_private_key_file: "{{ architect_ssh_client_key.priv_path }}"
         ansible_ssh_common_args: "-o UserKnownHostsFile={{ all_known_hosts_file }}"
         cloud_provider: ec2
