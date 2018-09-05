@@ -1,0 +1,58 @@
+version: "3.5"
+services:
+
+  pleroma:
+    image: PLEROMA_IMAGE_NAME
+    ports:
+      - "80:8080"
+      - "443:8443"
+    volumes:
+      - pleroma_uploads:/pleroma/uploads
+    secrets:
+      - source: pleroma_postgres_su_script
+        target: setup_db.psql
+        mode: 0600
+        uid: 0
+        gid: 0
+      - source: pleroma_postgres_su_pgpass
+        target: superuser.pgpass
+        mode: 0600
+        uid: 0
+        gid: 0
+      - source: pleroma_env_secrets_file
+        target: prod.secret.exs
+        mode: 0600
+        uid: "{{ pleroma_swarm_httpd_user.name }}"
+        gid: "{{ pleroma_swarm_httpd_user.group }}"
+    deploy:
+      replicas: 1
+    command: >
+      "???"
+
+  postgres:
+    image: postgres-x.x:alpine
+    volumes:
+      - postgres_data:/path/to/postgres/lib/whatever
+
+volumes:
+  pleroma_uploads:
+  postgres_data:
+
+# NOTE: To be able to update our secrets and configs
+# we must use the name property on each secret/config.
+# (The name property requires using version 3.5 of the compose format.)
+# We must set the name to change whenever the file is updated,
+# so we set it to the hash of the file,
+# such that if our files change, so will the name.
+# See also: https://blog.viktoradam.net/2018/02/28/swarm-secrets-made-easy/
+
+secrets:
+  pleroma_postgres_su_script:
+    file: "{{ pleroma_swarm_postgres_su_secret_path }}"
+    name: pleroma_postgres_su_secret_${POSTGRES_SU_SECRET_HASH}
+  pleroma_postgres_su_pgpass:
+    file: "{{ pleroma_swarm_postgres_su_pgpass_path }}"
+    name: pleroma_postgres_su_pgpass_${POSTGRES_SU_PGPASS_HASH}
+  pleroma_env_secrets_file:
+    file: "{{ pleroma_swarm_env_secrets_file }}"
+    name: pleroma_env_secrets_file_${PLEROMA_ENV_SECRETS_HASH}

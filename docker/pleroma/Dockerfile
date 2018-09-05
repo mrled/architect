@@ -9,6 +9,7 @@ RUN true \
        build-base \
        dumb-init \
        git \
+       postgresql-client \
     && addgroup pleroma \
     && adduser -h /pleroma -s /bin/sh -D -G pleroma pleroma \
     && true
@@ -19,6 +20,8 @@ WORKDIR /pleroma
 RUN true \
     && git https://git.pleroma.social/pleroma/pleroma.git /pleroma \
     && git checkout ${PLEROMA_VER} \
+    && rm /pleroma/config/prod.secret.exs \
+    && ln -s /run/secrets/prod.secret.exs /pleroma/config/prod.secret.exs \
     && mix local.rebar --force \
     && mix local.hex --force \
     && mix deps.get \
