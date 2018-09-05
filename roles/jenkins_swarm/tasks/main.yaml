@@ -93,7 +93,7 @@
         file, and deployed again, but your container configuration doesn't seem
         to have changed. This is a bug(?) in Docker. Restart it like so
 
-            {{ jenkins_swarm_ssh_script_path }} sudo docker service update --force {{ jenkins_swarm_stackname }}_architect-jenkins
+            docker service update --force {{ jenkins_swarm_stackname }}_architect-jenkins
 
   - name: Print inflatable-wharf loop message
     debug:
@@ -105,7 +105,7 @@
         If we time out (or you get bored),
         cancel this and check for yourself whether the cert exists with
 
-            {{ jenkins_swarm_ssh_script_path }} sudo {{ jenkins_swarm_inflwh_cert_check_cmd }}
+            {{ jenkins_swarm_inflwh_cert_check_cmd }}
 
         and check whether the '{{ jenkins_swarm_domain_name }}.crt' file exists
 
@@ -134,7 +134,7 @@
 
         If this times out, you can check for a healthy Jenkins container using
 
-            {{ jenkins_swarm_ssh_script_path }} sudo {{ jenkins_swarm_archjenks_healthcheck_cmd }}
+            {{ jenkins_swarm_archjenks_healthcheck_cmd }}
 
         and check that the architect-jenkins container is started and healthy.
 
@@ -158,7 +158,7 @@
         If you haven't logged in to this Jenkins server yet, your first login must be with the initial admin password.
         To see this password, run
 
-            {{ jenkins_swarm_ssh_script_path }} sudo docker exec {{ jenkins_swarm_archjenks_container_id }} cat /var/jenkins_home/secrets/initialAdminPassword
+            docker exec {{ jenkins_swarm_archjenks_container_id }} cat /var/jenkins_home/secrets/initialAdminPassword
 
         We generated a cert for this domain, so ensure DNS and networking allows Architect to be reached at
 
@@ -170,26 +170,26 @@
 
         To restart the inflatable-wharf container
 
-            {{ jenkins_swarm_ssh_script_path }} sudo docker restart {{ jenkins_swarm_inflwharf_container_id }}
+            docker restart {{ jenkins_swarm_inflwharf_container_id }}
 
         This will generate a new container ID for the inflatable-wharf container; get that ID with
 
-            {{ jenkins_swarm_ssh_script_path }} sudo docker ps --quiet --filter "name={{ jenkins_swarm_stackname }}_inflatable-wharf.*"
+            docker ps --quiet --filter "name={{ jenkins_swarm_stackname }}_inflatable-wharf.*"
 
         To delete the certificate
 
-            {{ jenkins_swarm_ssh_script_path }} sudo docker exec <NEW CONTAINER ID> rm /srv/inflatable-wharf/certificates/{{ jenkins_swarm_domain_name }}.crt
+            docker exec <NEW CONTAINER ID> rm /srv/inflatable-wharf/certificates/{{ jenkins_swarm_domain_name }}.crt
 
         You can view certificate details with
 
-            {{ jenkins_swarm_ssh_script_path }} sudo docker exec <NEW CONTAINER ID> openssl x509 -in /srv/inflatable-wharf/certificates/{{ jenkins_swarm_domain_name }}.crt -noout -text
+            docker exec <NEW CONTAINER ID> openssl x509 -in /srv/inflatable-wharf/certificates/{{ jenkins_swarm_domain_name }}.crt -noout -text
 
         Then check the logs to know when the cert gets generated
 
-            {{ jenkins_swarm_ssh_script_path }} sudo docker logs <NEW CONTAINER ID>
+            docker logs <NEW CONTAINER ID>
 
         And finally restart the Jenkins container (this will generate a NEW container ID!)
 
-            {{ jenkins_swarm_ssh_script_path }} sudo docker restart <NEW CONTAINER ID>
+            docker restart <NEW CONTAINER ID>
 
   when: jenkins_swarm_skip | bool == false

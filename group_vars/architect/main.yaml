@@ -12,10 +12,6 @@ architect_docker_volume:
     device: xvdj
     mountpoint: /var/lib/docker
 
-# Local path to save an SSH script
-# Only used to have an easy way to connect for manual debugging
-architect_ssh_script_path: "{{ all_workdir }}/ssh-architect.sh"
-
 # Admin user for the architect instance
 architect_admin_user: architect
 
@@ -37,10 +33,13 @@ architect_ssh_client_key:
 # CloudFormation stack name
 cfn_dockerhost_ci_stackname: ArchitectCi
 
+# Local path to save an SSH script
+# Only used to have an easy way to connect for manual debugging
+cfn_docker_ssh_script_path: "{{ all_workdir }}/ssh-architect.sh"
+
 cfn_dockerhost_docker_volume_device: "{{ architect_docker_volume.device }}"
 cfn_dockerhost_workdir: "{{ all_workdir }}"
 cfn_dockerhost_known_hosts_file: "{{ all_known_hosts_file }}"
-cfn_docker_ssh_script_path: "{{ architect_ssh_script_path }}"
 cfn_dockerhost_ssh_client_key: "{{ architect_ssh_client_key }}"
 cfn_dockerhost_aws_cfg: "{{ all_aws_cfg }}"
 cfn_dockerhost_deploy_bucket: "{{ all_deploy_bucket }}"
@@ -149,8 +148,6 @@ algoclient_vpn_keepalive_host: "architect.internal.micahrl.com"
 
 # The domain name to use for the Jenkins server
 jenkins_swarm_domain_name: architect.internal.micahrl.com
-
-jenkins_swarm_ssh_script_path: "{{ architect_ssh_script_path }}"
 
 # architect-jenkins container settings
 #
