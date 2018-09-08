@@ -3,6 +3,8 @@ services:
 
   pleroma:
     image: PLEROMA_IMAGE_NAME
+    deploy:
+      replicas: 1
     ports:
       - "80:8080"
       - "443:8443"
@@ -24,15 +26,20 @@ services:
         mode: 0600
         uid: "{{ pleroma_swarm_httpd_user.name }}"
         gid: "{{ pleroma_swarm_httpd_user.group }}"
-    deploy:
-      replicas: 1
-    command: >
-      "???"
 
   postgres:
-    image: postgres-x.x:alpine
+    image: postgres/10.5:alpine
+    deploy:
+      replicas: 1
+    secrets:
+      source: postgres_su_password
+      # There aren't any other Unix users on this container, so I don't think this mode should be a problem?
+      mode: 0444
+    environment:
+      POSTGRES_PASSWORD_FILE: /run/secrets/postgress_su_password
+      POSTGRES_USER: "{{ pleroma_swarm_postgres_superuser }}"
     volumes:
-      - postgres_data:/path/to/postgres/lib/whatever
+      - postgres_data:/var/lib/postgresql/data
 
 volumes:
   pleroma_uploads:
@@ -47,12 +54,19 @@ volumes:
 # See also: https://blog.viktoradam.net/2018/02/28/swarm-secrets-made-easy/
 
 secrets:
+  # The setup_db.sql script from 'mix generate_config'
   pleroma_postgres_su_script:
     file: "{{ pleroma_swarm_postgres_su_secret_path }}"
     name: pleroma_postgres_su_secret_${POSTGRES_SU_SECRET_HASH}
+  # A valid .pgpass file with a password for the postgres superuser
   pleroma_postgres_su_pgpass:
     file: "{{ pleroma_swarm_postgres_su_pgpass_path }}"
     name: pleroma_postgres_su_pgpass_${POSTGRES_SU_PGPASS_HASH}
+  # The prod.secrets.exs file from 'mix generate_config'
   pleroma_env_secrets_file:
     file: "{{ pleroma_swarm_env_secrets_file }}"
     name: pleroma_env_secrets_file_${PLEROMA_ENV_SECRETS_HASH}
+  # A file containing _just_ the postgres superuser password (not a .pgpass file!)
+  postgres_su_password:
+    file: "{{ pleroma_swarm_postgres_su_password_file }}"
+    name: postgres_su_password_${POSTGRESS_SU_PASSWORD_HASH}
